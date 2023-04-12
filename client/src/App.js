@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const geoJsonStyle = {
@@ -9,6 +9,8 @@ const geoJsonStyle = {
   color: "white",
   fillOpacity: 0.5,
 };
+
+const onFeatureClick = () => {};
 
 function App() {
   const [geoJsonData, setGeoJsonData] = useState(null);
@@ -29,7 +31,20 @@ function App() {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {geoJsonData && <GeoJSON key="geojson-layer" data={geoJsonData} style={geoJsonStyle} />}
+        {geoJsonData && (
+          <GeoJSON
+            key="geojson-layer"
+            data={geoJsonData}
+            style={geoJsonStyle}
+            onEachFeature={(feature, layer) => {
+              console.log("Feature properties:", feature.properties)
+              layer.on({
+                click: onFeatureClick,
+              });
+              layer.bindPopup(`<strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}`);
+            }}
+          />
+        )}
       </MapContainer>
     </div>
   );

@@ -1,47 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import { zoningColors } from './zoningColors';
 
 
-const getColorByLabel = (label) => {
-    switch (label) {
-      case 'MU-4':
-        return 'green';
-      case 'RA-2':
-        return 'blue';
-      case 'RF-1':
-        return 'yellow';
-      case 'UNZONED':
-        return 'gray';
-      case 'NC-7':
-        return '#02a7a8';
-      case 'ARTS-3':
-        return '#0246a8';
-      case 'ARTS-4':
-        return '#5402a7';
-      case 'RA-4':
-        return '#6b02a6';
-      case 'MU-5A':
-        return '#02a69b';
-      default:
-        return 'gray';
-    }
-  };
+const getColorByLabel = (label) => zoningColors[label];
 
 const geoJsonStyle = (feature) => {
-return {
+  return {
     fillColor: getColorByLabel(feature.properties.ZONING_LABEL),
     weight: 1,
     opacity: 1,
     color: 'white',
     fillOpacity: 0.5,
-};
+  };
 };
 
 const onFeatureClick = () => {};
 
 const ZoningMap = () => {
   const [geoJsonData, setGeoJsonData] = useState(null);
+  const [showZoning, setShowZoning] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
@@ -53,26 +32,42 @@ const ZoningMap = () => {
   }, []);
 
   return (
-    <MapContainer center={[38.9, -77.02]} zoom={13} style={{ height: "100vh", width: "100%" }}>
-    <TileLayer
-      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-    />
-    {geoJsonData && (
-      <GeoJSON
-        key="geojson-layer"
-        data={geoJsonData}
-        style={geoJsonStyle}
-        onEachFeature={(feature, layer) => {
-          console.log("Feature properties:", feature.properties)
-          layer.on({
-            click: onFeatureClick,
-          });
-          layer.bindPopup(`<strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}`);
-        }}
-      />
-    )}
-  </MapContainer>
+    <div style={{ position: "relative", height: "100vh" }}>
+      <MapContainer center={[38.9, -77.02]} zoom={13} style={{ height: "100%" }}>
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {geoJsonData && (
+          <>
+            {showZoning && (
+              <GeoJSON
+                key="geojson-layer"
+                data={geoJsonData}
+                style={geoJsonStyle}
+                onEachFeature={(feature, layer) => {
+                  console.log("Feature properties:", feature.properties)
+                  layer.on({
+                    click: onFeatureClick,
+                  });
+                  layer.bindPopup(`<strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}`);
+                }}
+              />
+            )}
+            <div style={{ position: "absolute", top: 10, right: 10, zIndex: 1000 }}>
+              <label htmlFor="toggle-zoning">Toggle zoning data</label>
+              <input
+                id="toggle-zoning"
+                type="checkbox"
+                checked={showZoning}
+                onChange={(e) => setShowZoning(e.target.checked)}
+              />
+            </div>
+          </>
+        )}
+        {!geoJsonData && <p>Loading data...</p>}
+      </MapContainer>
+    </div>
   );
 };
 

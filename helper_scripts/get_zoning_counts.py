@@ -1,7 +1,7 @@
 import json
 
 # Load the GeoJSON file
-with open('/data.geojson') as f:
+with open('../client/public/data.geojson') as f:
     geojson = json.load(f)
 
 # Initialize an empty dictionary to hold the counts

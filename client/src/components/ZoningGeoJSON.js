@@ -19,6 +19,7 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
       console.log(`Selected zone is ${currentSelectedZone}`);
   
       if (currentSelectedZone) {
+        console.log('Changing zoning label to:', currentSelectedZone); // Add this log
         feature.properties.ZONING_LABEL = currentSelectedZone;
         e.target.setStyle(geoJsonStyle(feature));
         e.target.setPopupContent(`<strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}`);

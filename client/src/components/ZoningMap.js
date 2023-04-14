@@ -1,18 +1,18 @@
-// Main component that renders the map, the zoning data as a GeoJSON layer, 
-// the zoning toggle, and the "Select a Zone" dropdown menu. It also handles 
-// the logic for changing the zone of a clicked area on the map.
+// ZoningMap.js
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { fetchGeoJsonData } from '../utils/fetchGeoJSONData';
 import ZoningGeoJSON from './ZoningGeoJSON';
 import ZoningToggle from './ZoningToggle';
-import ZoneSelector from './ZoneSelector';
+import ZoneAutocomplete from './ZoneAutocomplete';
+import { zoningColors } from '../constants/zoningColors'; // <-- Import the zoningColors object
 
 const ZoningMap = () => {
   const [geoJsonData, setGeoJsonData] = useState(null);
   const [showZoning, setShowZoning] = useState(true);
   const [selectedZone, setSelectedZone] = useState(null);
+  const zoneLabels = Object.keys(zoningColors); // <-- Get the zone labels from the zoningColors object
 
   useEffect(() => {
     fetchGeoJsonData().then((data) => {
@@ -27,19 +27,22 @@ const ZoningMap = () => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-      {geoJsonData && (
-        <>
-          {showZoning && (
-            <ZoningGeoJSON
-              geoJsonData={geoJsonData}
-              selectedZone={selectedZone}
-              setSelectedZone={setSelectedZone} // <-- pass the setSelectedZone function
+        {geoJsonData && (
+          <>
+            {showZoning && (
+              <ZoningGeoJSON
+                geoJsonData={geoJsonData}
+                selectedZone={selectedZone}
+                setSelectedZone={setSelectedZone}
+              />
+            )}
+            <ZoningToggle showZoning={showZoning} setShowZoning={setShowZoning} />
+            <ZoneAutocomplete
+              zoneLabels={zoneLabels} // <-- Pass the zoneLabels array
+              onZoneChange={(selectedZone) => setSelectedZone(selectedZone)}
             />
-          )}
-          <ZoningToggle showZoning={showZoning} setShowZoning={setShowZoning} />
-          <ZoneSelector setSelectedZone={setSelectedZone} />
-        </>
-      )}
+          </>
+        )}
       </MapContainer>
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Select, { components } from 'react-select';
 
-const ZoneAutocomplete = ({ zoneLabels, onZoneChange }) => {
+const ZoneAutocomplete = ({ zoneLabels, onZoneChange, map }) => {
   console.log('ZoneAutocomplete rendering');
 
   const options = zoneLabels.map((label) => ({ value: label, label }));
@@ -36,10 +36,19 @@ const ZoneAutocomplete = ({ zoneLabels, onZoneChange }) => {
         onFocus={() => {
           console.log('Select onFocus');
           setMenuIsOpen(true);
+          if (map) {
+            console.log('in the map');
+            map.dragging.disable();
+            map.scrollWheelZoom.disable();
+          }
         }}
         onBlur={() => {
           console.log('Select onBlur');
           setTimeout(() => setMenuIsOpen(false), 200);
+          if (map) {
+            map.dragging.enable();
+            map.scrollWheelZoom.enable();
+          }
         }}
         menuIsOpen={menuIsOpen}
         isClearable

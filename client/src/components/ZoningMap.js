@@ -7,6 +7,7 @@ import ZoningGeoJSON from './ZoningGeoJSON';
 import ZoningToggle from './ZoningToggle';
 import ZoneAutocomplete from './ZoneAutocomplete';
 import { zoningColors } from '../constants/zoningColors'; // <-- Import the zoningColors object
+import ANCBoundariesGeoJSON from './ANCBoundariesGeoJSON'; // Import the new component
 
 const ZoningMap = () => {
   const [geoJsonData, setGeoJsonData] = useState(null);
@@ -14,11 +15,20 @@ const ZoningMap = () => {
   const [selectedZone, setSelectedZone] = useState(null);
   const [map, setMap] = useState(null); // Add a new state for the map instance
   const zoneLabels = Object.keys(zoningColors); // <-- Get the zone labels from the zoningColors object
+  const [ancBoundariesData, setAncBoundariesData] = useState(null); // Add a new state for ANC boundaries data
 
   useEffect(() => {
+    // Fetch the zoning map GeoJSON data
     fetchGeoJsonData('/datasets/zoning_map.geojson').then((data) => {
       setGeoJsonData(data);
     });
+
+    // Fetch the ANC boundaries GeoJSON data
+    fetchGeoJsonData('/datasets/Advisory_Neighborhood_Commissions_from_2023.geojson').then(
+      (data) => {
+        setAncBoundariesData(data);
+      }
+    );
   }, []);
 
   return (
@@ -43,6 +53,7 @@ const ZoningMap = () => {
                 zoningColors={zoningColors} // Pass the zoningColors object
               />
             )}
+            {ancBoundariesData && <ANCBoundariesGeoJSON geoJsonData={ancBoundariesData} />}
             <ZoningToggle showZoning={showZoning} setShowZoning={setShowZoning} />
             <ZoneAutocomplete
               zoneLabels={zoneLabels} // <-- Pass the zoneLabels array

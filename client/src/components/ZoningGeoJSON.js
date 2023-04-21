@@ -4,6 +4,7 @@
 import React, { useRef, useEffect } from 'react';
 import { GeoJSON } from 'react-leaflet';
 import { geoJsonStyle } from '../utils/zoningUtils';
+import { zoningColors } from '../constants/zoningColors';
 
 const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
     const selectedZoneRef = useRef(selectedZone); // <-- create a ref for selectedZone
@@ -21,7 +22,7 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
       if (currentSelectedZone) {
         console.log('Changing zoning label to:', currentSelectedZone); // Add this log
         feature.properties.ZONING_LABEL = currentSelectedZone;
-        e.target.setStyle(geoJsonStyle(feature));
+        e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
         e.target.setPopupContent(`<strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}`);
       }
     };
@@ -30,7 +31,7 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
       <GeoJSON
         key="geojson-layer"
         data={geoJsonData}
-        style={geoJsonStyle}
+        style={(feature) => geoJsonStyle(feature, 'ZONING_LABEL', zoningColors)} // Pass the property name and color mapping
         onEachFeature={(feature, layer) => {
           layer.on({
             click: (e) => onFeatureClick(e, feature),

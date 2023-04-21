@@ -1,10 +1,8 @@
-import { zoningColors } from '../constants/zoningColors';
+export const getColorByLabel = (label, colorMapping) => colorMapping[label];
 
-export const getColorByLabel = (label) => zoningColors[label];
-
-export const geoJsonStyle = (feature) => {
+export const geoJsonStyle = (feature, propertyName, colorMapping) => {
   return {
-    fillColor: getColorByLabel(feature.properties.ZONING_LABEL),
+    fillColor: getColorByLabel(feature.properties[propertyName], colorMapping),
     weight: 1,
     opacity: 1,
     color: 'white',

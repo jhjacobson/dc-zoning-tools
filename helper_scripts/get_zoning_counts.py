@@ -14,4 +14,4 @@ for feature in geojson['features']:
         zoning_counts[zoning_label] = zoning_counts.get(zoning_label, 0) + 1
 
 # Print the counts
-print(zoning_counts)
+# print(zoning_counts)

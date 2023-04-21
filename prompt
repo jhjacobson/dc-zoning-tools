@@ -1,0 +1,129 @@
+I have built a MERN app with these components and utility files for a zoning map application that allows users to view, toggle, and update zoning labels on a map. The application features an autocomplete search box for selecting zoning labels more efficiently.
+ZoningMap.js: This file serves as the main component for the zoning map. It imports other components like ZoningGeoJSON, ZoningToggle, and ZoneAutocomplete and manages the state for geoJsonData, showZoning, and selectedZone. It also includes the useEffect hook for fetching the GeoJSON data and sets up the MapContainer.
+
+ZoningGeoJSON.js: This component is responsible for displaying the GeoJSON data on the map. It receives the geoJsonData, selectedZone, and setSelectedZone as props from the ZoningMap component. It contains the onFeatureClick function that updates the zoning label and style when a user clicks on a feature.
+
+ZoningToggle.js: This component displays a toggle button that enables or disables the zoning layer on the map. It receives the showZoning and setShowZoning state from the ZoningMap component as props and toggles the state when the button is clicked.
+
+ZoneAutocomplete.js: This component renders an autocomplete input field that allows users to search and select a zoning label from a list. It takes the zoneLabels array and the onZoneChange function as props. It uses the react-select library to implement the autocomplete functionality.
+
+fetchGeoJSONData.js: A utility file for fetching GeoJSON data from the server. It exports a function fetchGeoJsonData that is used in the ZoningMap component to fetch and set the GeoJSON data.
+
+zoningUtils.js: This utility file contains functions to define the style and color for the GeoJSON layer, such as getColorByLabel and geoJsonStyle.
+
+zoningColors.js: This file is located in the constants folder and contains an object called zoningColors that maps zoning labels to their corresponding colors. The keys of this object are used as the zoneLabels array in the ZoningMap component.
+
+Here is the file structure:
+- src
+    - components
+        - ZoneAutocomplete.js
+        - ZoningGeoJSON.js
+        - ZoningMap.js
+        - ZoningToggle.js
+    - constants
+        - zoningColors.js
+    - utils
+        - fetchGeoJSONData.js
+        - zoningUtils.js
+    - leaflet-draw-custom.css
+
+I need help understanding why my draw functionality in ZoningMap.js doesn't appear. Below is the code for that JS file and the relevant CSS. Can you help?
+
+// ZoningMap.js
+import React, { useState, useEffect } from 'react';
+import { MapContainer, TileLayer } from 'react-leaflet';
+import { EditControl } from 'react-leaflet-draw'; // <-- Import the EditControl component
+import 'leaflet/dist/leaflet.css';
+import 'leaflet-draw/dist/leaflet.draw.css';
+import '../leaflet-draw-custom.css'; // <-- Import the custom CSS
+import { fetchGeoJsonData } from '../utils/fetchGeoJSONData';
+import ZoningGeoJSON from './ZoningGeoJSON';
+import ZoningToggle from './ZoningToggle';
+import ZoneAutocomplete from './ZoneAutocomplete';
+import { zoningColors } from '../constants/zoningColors';
+import { getColorByLabel } from '../utils/zoningUtils';
+
+const ZoningMap = () => {
+  const [geoJsonData, setGeoJsonData] = useState(null);
+  const [showZoning, setShowZoning] = useState(true);
+  const [selectedZone, setSelectedZone] = useState(null);
+  const [map, setMap] = useState(null); // Add a new state for the map instance
+  const zoneLabels = Object.keys(zoningColors); // <-- Get the zone labels from the zoningColors object
+
+  useEffect(() => {
+    console.log("Map state:", map);
+    fetchGeoJsonData().then((data) => {
+      setGeoJsonData(data);
+    });
+  }, []);
+
+  const handleDrawCreated = (e) => {
+    console.log("handleDrawCreated called");
+    const layer = e.layer;
+    layer.options.color = getColorByLabel(selectedZone);
+    layer.bindPopup(`<strong>Zoning Label:</strong> ${selectedZone}`);
+    layer.addTo(map);
+  };
+
+  return (
+    <div style={{ position: 'relative', height: '100vh' }}>
+      <MapContainer
+        center={[38.9, -77.02]}
+        zoom={13}
+        style={{ height: '100%' }}
+        whenCreated={(mapInstance) => {
+            console.log("Map instance created:", mapInstance); // Log when the map instance is created
+            setMap(mapInstance);
+          }}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {geoJsonData && (
+        <>
+            {showZoning && (
+            <ZoningGeoJSON
+                geoJsonData={geoJsonData}
+                selectedZone={selectedZone}
+                setSelectedZone={setSelectedZone}
+            />
+            )}
+            <ZoningToggle showZoning={showZoning} setShowZoning={setShowZoning} />
+            <ZoneAutocomplete
+            zoneLabels={zoneLabels}
+            onZoneChange={(selectedZone) => setSelectedZone(selectedZone)}
+            map={map}
+            />
+            {map && (
+            <>
+                {console.log("EditControl rendered")} {/* Log when the EditControl is rendered */}
+                <EditControl
+                position="bottomleft"
+                onDrawCreate={handleDrawCreated}
+                draw={{
+                    rectangle: false,
+                    circle: false,
+                    circlemarker: false,
+                    marker: false,
+                    polyline: false,
+                }}
+                />
+            </>
+            )}
+        </>
+        )}
+      </MapContainer>
+    </div>
+  );
+};
+
+export default ZoningMap;
+
+.leaflet-draw.leaflet-control {
+    z-index: 1000;
+  }  
+
+.leaflet-draw {
+    z-index: 1000;
+}

@@ -16,7 +16,7 @@ const ZoningMap = () => {
   const zoneLabels = Object.keys(zoningColors); // <-- Get the zone labels from the zoningColors object
 
   useEffect(() => {
-    fetchGeoJsonData().then((data) => {
+    fetchGeoJsonData('/datasets/zoning_map.geojson').then((data) => {
       setGeoJsonData(data);
     });
   }, []);
@@ -40,6 +40,7 @@ const ZoningMap = () => {
                 geoJsonData={geoJsonData}
                 selectedZone={selectedZone}
                 setSelectedZone={setSelectedZone}
+                zoningColors={zoningColors} // Pass the zoningColors object
               />
             )}
             <ZoningToggle showZoning={showZoning} setShowZoning={setShowZoning} />

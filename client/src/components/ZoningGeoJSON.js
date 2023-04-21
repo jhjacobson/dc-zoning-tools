@@ -3,7 +3,7 @@
 // click events on each zone feature.
 import React, { useRef, useEffect } from 'react';
 import { GeoJSON } from 'react-leaflet';
-import { getColorByLabel, geoJsonStyle } from '../utils/zoningUtils';
+import { geoJsonStyle } from '../utils/zoningUtils';
 
 const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
     const selectedZoneRef = useRef(selectedZone); // <-- create a ref for selectedZone

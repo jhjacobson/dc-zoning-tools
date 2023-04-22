@@ -7,3 +7,5 @@ Here are the key pieces of functionality:
 * Revert back to the initial zone of an area by right clicking on an area.
 * Enable/Disable the ANC and Comp Plan boundaries by clicking the buttons on the top right.
 * Remove the zoning map by clicking the checkbox on the top right.
+
+Run the app by entering the client directory and entering npm start.

@@ -48,50 +48,45 @@ const ZoningMap = () => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {geoJsonData && (
-          <>
-            {showZoning && (
-              <ZoningGeoJSON
-                geoJsonData={geoJsonData}
-                selectedZone={selectedZone}
-                setSelectedZone={setSelectedZone}
-                zoningColors={zoningColors} // Pass the zoningColors object
-              />
-            )}
-             {showANC && ancData && (
-              <BoundariesGeoJSON
-                geoJsonData={ancData}
-                color="red" // Set the desired boundary color for ANC
-              />
-              )}
-              <BoundariesToggle
-                showBoundaries={showANC}
-                setShowBoundaries={setShowANC}
-                label="ANC"
-                style={{ top: '40px', right: '10px' }} // Set the desired position for the ANC toggle button
-              />
-              {showCompPlan && compPlanData && (
-              <BoundariesGeoJSON
-                geoJsonData={compPlanData}
-                color="blue" // Set the desired boundary color for Comp Plan
-              />
-               )}
-            <BoundariesToggle
-              showBoundaries={showCompPlan}
-              setShowBoundaries={setShowCompPlan}
-              label="Comp Plan"
-              style={{ top: '70px', right: '10px' }} // Set the desired position for the Comp Plan toggle button
-            />
-           
-            <ZoningToggle showZoning={showZoning} setShowZoning={setShowZoning} />
-            {/* Add the ANCToggle component */}
-            <ZoningToggle showZoning={showZoning} setShowZoning={setShowZoning} />
-            <ZoneAutocomplete
-              zoneLabels={zoneLabels} // <-- Pass the zoneLabels array
-              onZoneChange={(selectedZone) => setSelectedZone(selectedZone)}
-              map={map} // Pass the map instance to ZoneAutocomplete
-            />
-          </>
+        {showANC && ancData && (
+          <BoundariesGeoJSON
+            geoJsonData={ancData}
+            color="red" // Set the desired boundary color for ANC
+          />
+        )}
+        <BoundariesToggle
+          showBoundaries={showANC}
+          setShowBoundaries={setShowANC}
+          label="ANC"
+          style={{ top: '40px', right: '10px' }} // Set the desired position for the ANC toggle button
+        />
+        {showCompPlan && compPlanData && (
+          <BoundariesGeoJSON
+            geoJsonData={compPlanData}
+            color="blue" // Set the desired boundary color for Comp Plan
+          />
+        )}
+        <BoundariesToggle
+          showBoundaries={showCompPlan}
+          setShowBoundaries={setShowCompPlan}
+          label="Comp Plan"
+          style={{ top: '70px', right: '10px' }} // Set the desired position for the Comp Plan toggle button
+        />
+
+        <ZoningToggle showZoning={showZoning} setShowZoning={setShowZoning} />
+        {/* Add the ANCToggle component */}
+        <ZoneAutocomplete
+          zoneLabels={zoneLabels} // <-- Pass the zoneLabels array
+          onZoneChange={(selectedZone) => setSelectedZone(selectedZone)}
+          map={map} // Pass the map instance to ZoneAutocomplete
+        />
+        {showZoning && geoJsonData && (
+          <ZoningGeoJSON
+            geoJsonData={geoJsonData}
+            selectedZone={selectedZone}
+            setSelectedZone={setSelectedZone}
+            zoningColors={zoningColors} // Pass the zoningColors object
+          />
         )}
       </MapContainer>
     </div>

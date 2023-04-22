@@ -12,6 +12,7 @@ const BoundariesGeoJSON = ({ geoJsonData, color }) => {
         color: color,
         fillOpacity: 0,
       }}
+      interactive={false}
     />
   );
 };

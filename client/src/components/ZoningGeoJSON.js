@@ -5,6 +5,7 @@ import React, { useRef, useEffect } from 'react';
 import { GeoJSON } from 'react-leaflet';
 import { geoJsonStyle } from '../utils/zoningUtils';
 import { zoningColors } from '../constants/zoningColors';
+import { area } from '@turf/turf';
 
 const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
     const selectedZoneRef = useRef(selectedZone); // <-- create a ref for selectedZone
@@ -24,13 +25,26 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
       const currentSelectedZone = selectedZoneRef.current; // <-- get the current value of the ref
       console.log('In feature click test');
       console.log(`Selected zone is ${currentSelectedZone}`);
-  
+      
+        // Create a GeoJSON Feature object from the feature's geometry
+      const geoJsonFeature = {
+        type: 'Feature',
+        geometry: feature.geometry,
+        properties: feature.properties
+      };
+      // Calculate the area
+      const zoneArea = area(geoJsonFeature);
+      const zoneAreaInSquareMi = (zoneArea * 0.00000038610215855).toFixed(2);
+
       if (currentSelectedZone) {
         console.log('Changing zoning label to:', currentSelectedZone); // Add this log
         feature.properties.ZONING_LABEL = currentSelectedZone;
-        e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
-        e.target.setPopupContent(`<strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}`);
       }
+      e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
+      e.target.setPopupContent(`
+        <strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}<br>
+        <strong>Area:</strong> ${zoneAreaInSquareMi} mi²
+      `);
     };
   
     return (
@@ -43,7 +57,7 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
             click: (e) => onFeatureClick(e, feature),
             contextmenu: (e) => onRevertClick(e, feature), // Add this line to handle right-click events
           });
-          layer.bindPopup(`<strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}`);
+          layer.bindPopup(); // create popup
         }}
       />
     );

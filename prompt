@@ -13,6 +13,12 @@ zoningUtils.js: This utility file contains functions to define the style and col
 
 zoningColors.js: This file is located in the constants folder and contains an object called zoningColors that maps zoning labels to their corresponding colors. The keys of this object are used as the zoneLabels array in the ZoningMap component.
 
+flumColors.js: similar to zoningColors.js but maps FLUM labels to their corresponding colors.
+
+BoundariesGeoJSON.js: pulls in the GeoJSON files representing ANCBoundaries and Compl Plan Boundaries
+
+BoundariesToggle.js: Toggles the ANC and Comp Plan boundaries
+
 Here is the file structure:
 - src
     - components
@@ -20,98 +26,161 @@ Here is the file structure:
         - ZoningGeoJSON.js
         - ZoningMap.js
         - ZoningToggle.js
+        - ANCBoundariesGeoJSON.js
+        - ANCToggle.js
     - constants
         - zoningColors.js
+        - flumColors.js
     - utils
         - fetchGeoJSONData.js
         - zoningUtils.js
-    - leaflet-draw-custom.css
 
-I need help understanding why my draw functionality in ZoningMap.js doesn't appear. Below is the code for that JS file and the relevant CSS. Can you help?
+I currently have the zoning map displayed (stored in public/zoning_map.geojson). I have the ability to change a zone. Sometimes when I'm changing a zone, I want to be able to revert back to the original zone. I don't always remember that zone though. How can I add an option to revert a zone back to what is stored in the GeoJSON?
 
-// ZoningMap.js
+Here are some code files in case they help. Let me know if you need others.
+
+Code for ZoningGeoJSON.js:
+// Responsible for rendering the GeoJSON layer with the zoning data. 
+// It takes care of styling the zones based on their labels and handles 
+// click events on each zone feature.
+import React, { useRef, useEffect } from 'react';
+import { GeoJSON } from 'react-leaflet';
+import { geoJsonStyle } from '../utils/zoningUtils';
+import { zoningColors } from '../constants/zoningColors';
+
+const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
+    const selectedZoneRef = useRef(selectedZone); // <-- create a ref for selectedZone
+  
+    // Update the ref's current value whenever selectedZone changes
+    useEffect(() => {
+      selectedZoneRef.current = selectedZone;
+    }, [selectedZone]);
+  
+    const onFeatureClick = (e, feature) => {
+      const currentSelectedZone = selectedZoneRef.current; // <-- get the current value of the ref
+      console.log('In feature click test');
+      console.log(`Selected zone is ${currentSelectedZone}`);
+  
+      if (currentSelectedZone) {
+        console.log('Changing zoning label to:', currentSelectedZone); // Add this log
+        feature.properties.ZONING_LABEL = currentSelectedZone;
+        e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
+        e.target.setPopupContent(`<strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}`);
+      }
+    };
+  
+    return (
+      <GeoJSON
+        key="geojson-layer"
+        data={geoJsonData}
+        style={(feature) => geoJsonStyle(feature, 'ZONING_LABEL', zoningColors)} // Pass the property name and color mapping
+        onEachFeature={(feature, layer) => {
+          layer.on({
+            click: (e) => onFeatureClick(e, feature),
+          });
+          layer.bindPopup(`<strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}`);
+        }}
+      />
+    );
+  };
+  
+  export default ZoningGeoJSON;
+  
+  Code for ZoningMap.js:
+  // ZoningMap.js
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
-import { EditControl } from 'react-leaflet-draw'; // <-- Import the EditControl component
 import 'leaflet/dist/leaflet.css';
-import 'leaflet-draw/dist/leaflet.draw.css';
-import '../leaflet-draw-custom.css'; // <-- Import the custom CSS
 import { fetchGeoJsonData } from '../utils/fetchGeoJSONData';
 import ZoningGeoJSON from './ZoningGeoJSON';
 import ZoningToggle from './ZoningToggle';
 import ZoneAutocomplete from './ZoneAutocomplete';
 import { zoningColors } from '../constants/zoningColors';
-import { getColorByLabel } from '../utils/zoningUtils';
+import BoundariesGeoJSON from './BoundariesGeoJSON';
+import BoundariesToggle from './BoundariesToggle';
+import { onEachFeature } from '../utils/popupUtils';
 
 const ZoningMap = () => {
   const [geoJsonData, setGeoJsonData] = useState(null);
   const [showZoning, setShowZoning] = useState(true);
   const [selectedZone, setSelectedZone] = useState(null);
-  const [map, setMap] = useState(null); // Add a new state for the map instance
-  const zoneLabels = Object.keys(zoningColors); // <-- Get the zone labels from the zoningColors object
+  const [map, setMap] = useState(null);
+  const zoneLabels = Object.keys(zoningColors);
+  const [showANC, setShowANC] = useState(true);
+  const [ancData, setAncData] = useState(null);
+  const [showCompPlan, setShowCompPlan] = useState(true);
+  const [compPlanData, setCompPlanData] = useState(null);
 
   useEffect(() => {
-    console.log("Map state:", map);
-    fetchGeoJsonData().then((data) => {
+    fetchGeoJsonData('/datasets/zoning_map.geojson').then((data) => {
       setGeoJsonData(data);
+    });
+
+    fetchGeoJsonData('/datasets/Advisory_Neighborhood_Commissions_from_2023.geojson').then((data) => {
+      setAncData(data);
+      console.log('ANC Data:', data); // Log the ANC data
+    });
+
+    fetchGeoJsonData('/datasets/Comprehensive_Plan_Planning_Areas.geojson').then((data) => {
+      setCompPlanData(data);
+      console.log('Comp Plan Data:', data); // Log the Comp Plan data
     });
   }, []);
 
-  const handleDrawCreated = (e) => {
-    console.log("handleDrawCreated called");
-    const layer = e.layer;
-    layer.options.color = getColorByLabel(selectedZone);
-    layer.bindPopup(`<strong>Zoning Label:</strong> ${selectedZone}`);
-    layer.addTo(map);
-  };
-
   return (
     <div style={{ position: 'relative', height: '100vh' }}>
-      <MapContainer
-        center={[38.9, -77.02]}
-        zoom={13}
+      <MapContainer 
+        center={[38.9, -77.02]} 
+        zoom={13} 
         style={{ height: '100%' }}
-        whenCreated={(mapInstance) => {
-            console.log("Map instance created:", mapInstance); // Log when the map instance is created
-            setMap(mapInstance);
-          }}
-      >
+        whenCreated={setMap}
+        >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {geoJsonData && (
-        <>
+          <>
             {showZoning && (
-            <ZoningGeoJSON
+              <ZoningGeoJSON
                 geoJsonData={geoJsonData}
                 selectedZone={selectedZone}
                 setSelectedZone={setSelectedZone}
-            />
+                zoningColors={zoningColors}
+                onEachFeature={onEachFeature(ancData, compPlanData)}
+              />
             )}
+            {showANC && ancData && (
+              <BoundariesGeoJSON
+                geoJsonData={ancData}
+                color="red"
+              />
+            )}
+            <BoundariesToggle
+              showBoundaries={showANC}
+              setShowBoundaries={setShowANC}
+              label="ANC"
+              style={{ top: '40px', right: '10px' }}
+            />
+            {showCompPlan && compPlanData && (
+              <BoundariesGeoJSON
+                geoJsonData={compPlanData}
+                color="blue"
+              />
+            )}
+            <BoundariesToggle
+              showBoundaries={showCompPlan}
+              setShowBoundaries={setShowCompPlan}
+              label="Comp Plan"
+              style={{ top: '70px', right: '10px' }}
+            />
             <ZoningToggle showZoning={showZoning} setShowZoning={setShowZoning} />
             <ZoneAutocomplete
-            zoneLabels={zoneLabels}
-            onZoneChange={(selectedZone) => setSelectedZone(selectedZone)}
-            map={map}
+              zoneLabels={zoneLabels}
+              onZoneChange={(selectedZone) => setSelectedZone(selectedZone)}
+              map={map}
             />
-            {map && (
-            <>
-                {console.log("EditControl rendered")} {/* Log when the EditControl is rendered */}
-                <EditControl
-                position="bottomleft"
-                onDrawCreate={handleDrawCreated}
-                draw={{
-                    rectangle: false,
-                    circle: false,
-                    circlemarker: false,
-                    marker: false,
-                    polyline: false,
-                }}
-                />
-            </>
-            )}
-        </>
+          </>
         )}
       </MapContainer>
     </div>
@@ -119,11 +188,3 @@ const ZoningMap = () => {
 };
 
 export default ZoningMap;
-
-.leaflet-draw.leaflet-control {
-    z-index: 1000;
-  }  
-
-.leaflet-draw {
-    z-index: 1000;
-}

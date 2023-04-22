@@ -14,6 +14,12 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
       selectedZoneRef.current = selectedZone;
     }, [selectedZone]);
   
+    const onRevertClick = (e, feature) => {
+      feature.properties.ZONING_LABEL = feature.properties.originalZoningLabel;
+      e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
+      e.target.setPopupContent(`<strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}`);
+    };
+    
     const onFeatureClick = (e, feature) => {
       const currentSelectedZone = selectedZoneRef.current; // <-- get the current value of the ref
       console.log('In feature click test');
@@ -31,10 +37,11 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
       <GeoJSON
         key="geojson-layer"
         data={geoJsonData}
-        style={(feature) => geoJsonStyle(feature, 'ZONING_LABEL', zoningColors)} // Pass the property name and color mapping
+        style={(feature) => geoJsonStyle(feature, 'ZONING_LABEL', zoningColors)}
         onEachFeature={(feature, layer) => {
           layer.on({
             click: (e) => onFeatureClick(e, feature),
+            contextmenu: (e) => onRevertClick(e, feature), // Add this line to handle right-click events
           });
           layer.bindPopup(`<strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}`);
         }}

@@ -24,6 +24,10 @@ const ZoningMap = () => {
 
   useEffect(() => {
     fetchGeoJsonData('/datasets/zoning_map.geojson').then((data) => {
+      // Store original zoning labels
+      data.features.forEach((feature) => {
+        feature.properties.originalZoningLabel = feature.properties.ZONING_LABEL;
+      });
       setGeoJsonData(data);
     });
 

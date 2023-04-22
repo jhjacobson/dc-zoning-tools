@@ -7,8 +7,8 @@ import ZoningGeoJSON from './ZoningGeoJSON';
 import ZoningToggle from './ZoningToggle';
 import ZoneAutocomplete from './ZoneAutocomplete';
 import { zoningColors } from '../constants/zoningColors';
-import ANCBoundariesGeoJSON from './ANCBoundariesGeoJSON';
-import ANCToggle from './ANCToggle';
+import BoundariesGeoJSON from './BoundariesGeoJSON'; // Import the new component
+import BoundariesToggle from './BoundariesToggle'; // Import the new component
 
 const ZoningMap = () => {
   const [geoJsonData, setGeoJsonData] = useState(null);
@@ -16,22 +16,24 @@ const ZoningMap = () => {
   const [selectedZone, setSelectedZone] = useState(null);
   const [map, setMap] = useState(null); // Add a new state for the map instance
   const zoneLabels = Object.keys(zoningColors); // <-- Get the zone labels from the zoningColors object
-  const [ancBoundariesData, setAncBoundariesData] = useState(null); // Add a new state for ANC boundaries data
   const [showANC, setShowANC] = useState(true); // Add a new state for showing or hiding ANC boundaries
+  const [ancData, setAncData] = useState(null); // Add a new state for ANC GeoJSON data
 
+  const [showCompPlan, setShowCompPlan] = useState(true); // Add a new state for showing or hiding Comp Plan boundaries
+  const [compPlanData, setCompPlanData] = useState(null); // Add a new state for Comp Plan GeoJSON data
 
   useEffect(() => {
-    // Fetch the zoning map GeoJSON data
     fetchGeoJsonData('/datasets/zoning_map.geojson').then((data) => {
       setGeoJsonData(data);
     });
 
-    // Fetch the ANC boundaries GeoJSON data
-    fetchGeoJsonData('/datasets/Advisory_Neighborhood_Commissions_from_2023.geojson').then(
-      (data) => {
-        setAncBoundariesData(data);
-      }
-    );
+    fetchGeoJsonData('/datasets/Advisory_Neighborhood_Commissions_from_2023.geojson').then((data) => {
+      setAncData(data);
+    });
+
+    fetchGeoJsonData('/datasets/Comprehensive_Plan_Planning_Areas.geojson').then((data) => {
+      setCompPlanData(data);
+    });
   }, []);
 
   return (
@@ -56,10 +58,33 @@ const ZoningMap = () => {
                 zoningColors={zoningColors} // Pass the zoningColors object
               />
             )}
-            {ancBoundariesData && showANC && <ANCBoundariesGeoJSON geoJsonData={ancBoundariesData} />}
+             {showANC && ancData && (
+              <BoundariesGeoJSON
+                geoJsonData={ancData}
+                color="red" // Set the desired boundary color for ANC
+              />
+              )}
+              <BoundariesToggle
+                showBoundaries={showANC}
+                setShowBoundaries={setShowANC}
+                label="ANC"
+                style={{ top: '40px', right: '10px' }} // Set the desired position for the ANC toggle button
+              />
+              {showCompPlan && compPlanData && (
+              <BoundariesGeoJSON
+                geoJsonData={compPlanData}
+                color="blue" // Set the desired boundary color for Comp Plan
+              />
+               )}
+            <BoundariesToggle
+              showBoundaries={showCompPlan}
+              setShowBoundaries={setShowCompPlan}
+              label="Comp Plan"
+              style={{ top: '70px', right: '10px' }} // Set the desired position for the Comp Plan toggle button
+            />
+           
             <ZoningToggle showZoning={showZoning} setShowZoning={setShowZoning} />
             {/* Add the ANCToggle component */}
-            <ANCToggle showANC={showANC} setShowANC={setShowANC} />
             <ZoningToggle showZoning={showZoning} setShowZoning={setShowZoning} />
             <ZoneAutocomplete
               zoneLabels={zoneLabels} // <-- Pass the zoneLabels array

@@ -37,17 +37,6 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
     `;
     };
 
-    const handleFeatureClick = (e, feature, selectedZone, isRevertClick) => {
-      if (isRevertClick) {
-        updateZoningLabel(feature, feature.properties.originalZoningLabel);
-      } else if (selectedZone) {
-        updateZoningLabel(feature, selectedZone);
-      }
-
-      e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
-      e.target.setPopupContent(generatePopupContent(feature));
-    };
-
     const onRevertClick = (e, feature) => {
       updateZoningLabel(feature, feature.properties.originalZoningLabel);
       e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
@@ -70,10 +59,8 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
         style={(feature) => geoJsonStyle(feature, 'ZONING_LABEL', zoningColors)}
         onEachFeature={(feature, layer) => {
           layer.on({
-            //click: (e) => onFeatureClick(e, feature),
-            //contextmenu: (e) => onRevertClick(e, feature), // Add this line to handle right-click events
-            click: (e) => handleFeatureClick(e, feature, selectedZone, false),
-            contextmenu: (e) => handleFeatureClick(e, feature, selectedZone, true),
+            click: (e) => onFeatureClick(e, feature),
+            contextmenu: (e) => onRevertClick(e, feature), // Add this line to handle right-click events
           });
           layer.bindPopup(); // create popup
         }}

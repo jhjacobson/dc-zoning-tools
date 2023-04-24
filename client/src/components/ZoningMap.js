@@ -73,7 +73,7 @@ const ZoningMap = () => {
         <BoundariesToggle
           showBoundaries={showCompPlan}
           setShowBoundaries={setShowCompPlan}
-          label="Comp Plan"
+          label="Planning Area"
           style={{ top: '70px', right: '10px' }} // Set the desired position for the Comp Plan toggle button
         />
 

@@ -35,7 +35,7 @@ Here is the file structure:
         - fetchGeoJSONData.js
         - zoningUtils.js
 
-I currently have the zoning map displayed (stored in public/zoning_map.geojson). I have the ability to change a zone. Sometimes when I'm changing a zone, I want to be able to revert back to the original zone. I don't always remember that zone though. How can I add an option to revert a zone back to what is stored in the GeoJSON?
+I currently have the zoning map displayed (stored in public/zoning_map.geojson). I'd now like to be able to click on the map and have the planning area and ANC appear on the popup. How can I do that?
 
 Here are some code files in case they help. Let me know if you need others.
 
@@ -48,46 +48,80 @@ import { GeoJSON } from 'react-leaflet';
 import { geoJsonStyle } from '../utils/zoningUtils';
 import { zoningColors } from '../constants/zoningColors';
 
+// Responsible for rendering the GeoJSON layer with the zoning data. 
+// It takes care of styling the zones based on their labels and handles 
+// click events on each zone feature.
+import React, { useRef, useEffect } from 'react';
+import { GeoJSON } from 'react-leaflet';
+import { geoJsonStyle } from '../utils/zoningUtils';
+import { zoningColors } from '../constants/zoningColors';
+import { area } from '@turf/turf';
+import { AREA_CONVERSION } from "../constants/areaConversion";
+
 const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
     const selectedZoneRef = useRef(selectedZone); // <-- create a ref for selectedZone
-  
     // Update the ref's current value whenever selectedZone changes
     useEffect(() => {
       selectedZoneRef.current = selectedZone;
     }, [selectedZone]);
   
+    const updateZoningLabel = (feature, label) => {
+      feature.properties.ZONING_LABEL = label;
+    };
+
+    const calculateArea = (feature) => {
+      const geoJsonFeature = {
+        type: "Feature",
+        geometry: feature.geometry,
+        properties: feature.properties,
+      };
+      const zoneArea = area(geoJsonFeature);
+      return (zoneArea * AREA_CONVERSION.SQ_M_TO_SQ_MI).toFixed(2);
+    };
+
+    const generatePopupContent = (feature) => {
+      const zoneAreaInSquareMi = calculateArea(feature);
+      return `
+        <strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}<br>
+        <strong>Area:</strong> ${zoneAreaInSquareMi} mi²
+    `;
+    };
+
+    const onRevertClick = (e, feature) => {
+      updateZoningLabel(feature, feature.properties.originalZoningLabel);
+      e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
+      e.target.setPopupContent(generatePopupContent(feature));
+    };
+
     const onFeatureClick = (e, feature) => {
       const currentSelectedZone = selectedZoneRef.current; // <-- get the current value of the ref
-      console.log('In feature click test');
-      console.log(`Selected zone is ${currentSelectedZone}`);
-  
       if (currentSelectedZone) {
-        console.log('Changing zoning label to:', currentSelectedZone); // Add this log
-        feature.properties.ZONING_LABEL = currentSelectedZone;
-        e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
-        e.target.setPopupContent(`<strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}`);
+        updateZoningLabel(feature, currentSelectedZone);
       }
+      e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
+      e.target.setPopupContent(generatePopupContent(feature));
     };
   
     return (
       <GeoJSON
         key="geojson-layer"
         data={geoJsonData}
-        style={(feature) => geoJsonStyle(feature, 'ZONING_LABEL', zoningColors)} // Pass the property name and color mapping
+        style={(feature) => geoJsonStyle(feature, 'ZONING_LABEL', zoningColors)}
         onEachFeature={(feature, layer) => {
           layer.on({
             click: (e) => onFeatureClick(e, feature),
+            contextmenu: (e) => onRevertClick(e, feature), // Add this line to handle right-click events
           });
-          layer.bindPopup(`<strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}`);
+          layer.bindPopup(); // create popup
         }}
       />
     );
   };
   
   export default ZoningGeoJSON;
-  
-  Code for ZoningMap.js:
-  // ZoningMap.js
+
+Code for ZoningMap.js:
+// ZoningMap.js
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -96,34 +130,36 @@ import ZoningGeoJSON from './ZoningGeoJSON';
 import ZoningToggle from './ZoningToggle';
 import ZoneAutocomplete from './ZoneAutocomplete';
 import { zoningColors } from '../constants/zoningColors';
-import BoundariesGeoJSON from './BoundariesGeoJSON';
-import BoundariesToggle from './BoundariesToggle';
-import { onEachFeature } from '../utils/popupUtils';
+import BoundariesGeoJSON from './BoundariesGeoJSON'; // Import the new component
+import BoundariesToggle from './BoundariesToggle'; // Import the new component
 
 const ZoningMap = () => {
   const [geoJsonData, setGeoJsonData] = useState(null);
   const [showZoning, setShowZoning] = useState(true);
   const [selectedZone, setSelectedZone] = useState(null);
-  const [map, setMap] = useState(null);
-  const zoneLabels = Object.keys(zoningColors);
-  const [showANC, setShowANC] = useState(true);
-  const [ancData, setAncData] = useState(null);
-  const [showCompPlan, setShowCompPlan] = useState(true);
-  const [compPlanData, setCompPlanData] = useState(null);
+  const [map, setMap] = useState(null); // Add a new state for the map instance
+  const zoneLabels = Object.keys(zoningColors); // <-- Get the zone labels from the zoningColors object
+  const [showANC, setShowANC] = useState(true); // Add a new state for showing or hiding ANC boundaries
+  const [ancData, setAncData] = useState(null); // Add a new state for ANC GeoJSON data
+
+  const [showCompPlan, setShowCompPlan] = useState(true); // Add a new state for showing or hiding Comp Plan boundaries
+  const [compPlanData, setCompPlanData] = useState(null); // Add a new state for Comp Plan GeoJSON data
 
   useEffect(() => {
     fetchGeoJsonData('/datasets/zoning_map.geojson').then((data) => {
+      // Store original zoning labels
+      data.features.forEach((feature) => {
+        feature.properties.originalZoningLabel = feature.properties.ZONING_LABEL;
+      });
       setGeoJsonData(data);
     });
 
     fetchGeoJsonData('/datasets/Advisory_Neighborhood_Commissions_from_2023.geojson').then((data) => {
       setAncData(data);
-      console.log('ANC Data:', data); // Log the ANC data
     });
 
     fetchGeoJsonData('/datasets/Comprehensive_Plan_Planning_Areas.geojson').then((data) => {
       setCompPlanData(data);
-      console.log('Comp Plan Data:', data); // Log the Comp Plan data
     });
   }, []);
 
@@ -133,54 +169,51 @@ const ZoningMap = () => {
         center={[38.9, -77.02]} 
         zoom={13} 
         style={{ height: '100%' }}
-        whenCreated={setMap}
+        whenCreated={setMap} // Add the whenCreated prop to set the map instance
         >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {geoJsonData && (
-          <>
-            {showZoning && (
-              <ZoningGeoJSON
-                geoJsonData={geoJsonData}
-                selectedZone={selectedZone}
-                setSelectedZone={setSelectedZone}
-                zoningColors={zoningColors}
-                onEachFeature={onEachFeature(ancData, compPlanData)}
-              />
-            )}
-            {showANC && ancData && (
-              <BoundariesGeoJSON
-                geoJsonData={ancData}
-                color="red"
-              />
-            )}
-            <BoundariesToggle
-              showBoundaries={showANC}
-              setShowBoundaries={setShowANC}
-              label="ANC"
-              style={{ top: '40px', right: '10px' }}
-            />
-            {showCompPlan && compPlanData && (
-              <BoundariesGeoJSON
-                geoJsonData={compPlanData}
-                color="blue"
-              />
-            )}
-            <BoundariesToggle
-              showBoundaries={showCompPlan}
-              setShowBoundaries={setShowCompPlan}
-              label="Comp Plan"
-              style={{ top: '70px', right: '10px' }}
-            />
-            <ZoningToggle showZoning={showZoning} setShowZoning={setShowZoning} />
-            <ZoneAutocomplete
-              zoneLabels={zoneLabels}
-              onZoneChange={(selectedZone) => setSelectedZone(selectedZone)}
-              map={map}
-            />
-          </>
+        {showANC && ancData && (
+          <BoundariesGeoJSON
+            geoJsonData={ancData}
+            color="red" // Set the desired boundary color for ANC
+          />
+        )}
+        <BoundariesToggle
+          showBoundaries={showANC}
+          setShowBoundaries={setShowANC}
+          label="ANC"
+          style={{ top: '40px', right: '10px' }} // Set the desired position for the ANC toggle button
+        />
+        {showCompPlan && compPlanData && (
+          <BoundariesGeoJSON
+            geoJsonData={compPlanData}
+            color="blue" // Set the desired boundary color for Comp Plan
+          />
+        )}
+        <BoundariesToggle
+          showBoundaries={showCompPlan}
+          setShowBoundaries={setShowCompPlan}
+          label="Comp Plan"
+          style={{ top: '70px', right: '10px' }} // Set the desired position for the Comp Plan toggle button
+        />
+
+        <ZoningToggle showZoning={showZoning} setShowZoning={setShowZoning} />
+        {/* Add the ANCToggle component */}
+        <ZoneAutocomplete
+          zoneLabels={zoneLabels} // <-- Pass the zoneLabels array
+          onZoneChange={(selectedZone) => setSelectedZone(selectedZone)}
+          map={map} // Pass the map instance to ZoneAutocomplete
+        />
+        {showZoning && geoJsonData && (
+          <ZoningGeoJSON
+            geoJsonData={geoJsonData}
+            selectedZone={selectedZone}
+            setSelectedZone={setSelectedZone}
+            zoningColors={zoningColors} // Pass the zoningColors object
+          />
         )}
       </MapContainer>
     </div>

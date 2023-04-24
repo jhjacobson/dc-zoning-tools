@@ -7,6 +7,7 @@ import { geoJsonStyle } from '../utils/zoningUtils';
 import { zoningColors } from '../constants/zoningColors';
 import { area } from '@turf/turf';
 import { AREA_CONVERSION } from "../constants/areaConversion";
+import { householdsPerSqMile } from '../constants/householdsPerSqMile';
 
 const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
     const selectedZoneRef = useRef(selectedZone); // <-- create a ref for selectedZone
@@ -31,9 +32,12 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
 
     const generatePopupContent = (feature) => {
       const zoneAreaInSquareMi = calculateArea(feature);
+      const householdsPerSqMileValue = householdsPerSqMile[feature.properties.ZONING_LABEL] || 0;
+      const numberOfHouseholds = Math.round(zoneAreaInSquareMi * householdsPerSqMileValue);
       return `
         <strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}<br>
-        <strong>Area:</strong> ${zoneAreaInSquareMi} mi²
+        <strong>Area:</strong> ${zoneAreaInSquareMi} mi²<br>
+        <strong>Households:</strong> ${numberOfHouseholds}
     `;
     };
 

@@ -34,12 +34,22 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
       const zoneAreaInSquareMi = calculateArea(feature);
       const householdsPerSqMileValue = householdsPerSqMile[feature.properties.ZONING_LABEL] || 0;
       const numberOfHouseholds = Math.round(zoneAreaInSquareMi * householdsPerSqMileValue);
+    
+      const originalZoningLabel = feature.properties.originalZoningLabel;
+      const oldHouseholdsPerSqMileValue = householdsPerSqMile[originalZoningLabel] || 0;
+      const oldNumberOfHouseholds = Math.round(zoneAreaInSquareMi * oldHouseholdsPerSqMileValue);
+      const diff = numberOfHouseholds - oldNumberOfHouseholds;
+      const changeInHouseholds = `<strong>Change in Households:</strong> ${diff}`;
+    
       return `
         <strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}<br>
+        <strong>Original Zoning Label:</strong> ${originalZoningLabel}<br>
         <strong>Area:</strong> ${zoneAreaInSquareMi} mi²<br>
-        <strong>Households:</strong> ${numberOfHouseholds}
-    `;
+        <strong>Households:</strong> ${numberOfHouseholds}<br>
+        ${changeInHouseholds}
+      `;
     };
+    
 
     const onRevertClick = (e, feature) => {
       updateZoningLabel(feature, feature.properties.originalZoningLabel);
@@ -53,8 +63,9 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
         updateZoningLabel(feature, currentSelectedZone);
       }
       e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
-      e.target.setPopupContent(generatePopupContent(feature));
+      e.target.setPopupContent(generatePopupContent(feature)); // Remove the oldZoningLabel parameter
     };
+    
   
     return (
       <GeoJSON

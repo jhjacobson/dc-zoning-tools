@@ -31,32 +31,24 @@ Here is the file structure:
     - constants
         - zoningColors.js
         - flumColors.js
+        - areaConversion.js
+        - householdsPerSqMile.js
     - utils
         - fetchGeoJSONData.js
         - zoningUtils.js
 
-I currently have the zoning map displayed (stored in public/zoning_map.geojson). I'd now like to be able to click on the map and have the planning area and ANC appear on the popup. How can I do that?
+I currently have the zoning map displayed (stored in public/zoning_map.geojson). I have defined the average number of households per square mile per zoning label. Currently, when I click on a zone, it displays the zoning label, the area in square miles of the zone, and the predicted number of households in the zone. When I change the zone, it displays the change in predicted number of households. As an example, if something is RA-2, it might have 20 people per square mile. If I bump it to RA-3, it might increase to 40 people per square mile. Now, I need help displaying the total change across all of the zoning updates. Can you help me with this?
 
 Here are some code files in case they help. Let me know if you need others.
 
 Code for ZoningGeoJSON.js:
-// Responsible for rendering the GeoJSON layer with the zoning data. 
-// It takes care of styling the zones based on their labels and handles 
-// click events on each zone feature.
-import React, { useRef, useEffect } from 'react';
-import { GeoJSON } from 'react-leaflet';
-import { geoJsonStyle } from '../utils/zoningUtils';
-import { zoningColors } from '../constants/zoningColors';
-
-// Responsible for rendering the GeoJSON layer with the zoning data. 
-// It takes care of styling the zones based on their labels and handles 
-// click events on each zone feature.
 import React, { useRef, useEffect } from 'react';
 import { GeoJSON } from 'react-leaflet';
 import { geoJsonStyle } from '../utils/zoningUtils';
 import { zoningColors } from '../constants/zoningColors';
 import { area } from '@turf/turf';
 import { AREA_CONVERSION } from "../constants/areaConversion";
+import { householdsPerSqMile } from '../constants/householdsPerSqMile';
 
 const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
     const selectedZoneRef = useRef(selectedZone); // <-- create a ref for selectedZone
@@ -81,11 +73,24 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
 
     const generatePopupContent = (feature) => {
       const zoneAreaInSquareMi = calculateArea(feature);
+      const householdsPerSqMileValue = householdsPerSqMile[feature.properties.ZONING_LABEL] || 0;
+      const numberOfHouseholds = Math.round(zoneAreaInSquareMi * householdsPerSqMileValue);
+    
+      const originalZoningLabel = feature.properties.originalZoningLabel;
+      const oldHouseholdsPerSqMileValue = householdsPerSqMile[originalZoningLabel] || 0;
+      const oldNumberOfHouseholds = Math.round(zoneAreaInSquareMi * oldHouseholdsPerSqMileValue);
+      const diff = numberOfHouseholds - oldNumberOfHouseholds;
+      const changeInHouseholds = `<strong>Change in Households:</strong> ${diff}`;
+    
       return `
         <strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}<br>
-        <strong>Area:</strong> ${zoneAreaInSquareMi} mi²
-    `;
+        <strong>Original Zoning Label:</strong> ${originalZoningLabel}<br>
+        <strong>Area:</strong> ${zoneAreaInSquareMi} mi²<br>
+        <strong>Households:</strong> ${numberOfHouseholds}<br>
+        ${changeInHouseholds}
+      `;
     };
+    
 
     const onRevertClick = (e, feature) => {
       updateZoningLabel(feature, feature.properties.originalZoningLabel);
@@ -99,8 +104,9 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
         updateZoningLabel(feature, currentSelectedZone);
       }
       e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
-      e.target.setPopupContent(generatePopupContent(feature));
+      e.target.setPopupContent(generatePopupContent(feature)); // Remove the oldZoningLabel parameter
     };
+    
   
     return (
       <GeoJSON
@@ -119,9 +125,8 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
   };
   
   export default ZoningGeoJSON;
-
+  
 Code for ZoningMap.js:
-// ZoningMap.js
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -196,7 +201,7 @@ const ZoningMap = () => {
         <BoundariesToggle
           showBoundaries={showCompPlan}
           setShowBoundaries={setShowCompPlan}
-          label="Comp Plan"
+          label="Planning Area"
           style={{ top: '70px', right: '10px' }} // Set the desired position for the Comp Plan toggle button
         />
 

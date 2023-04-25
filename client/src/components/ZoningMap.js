@@ -18,9 +18,14 @@ const ZoningMap = () => {
   const zoneLabels = Object.keys(zoningColors); // <-- Get the zone labels from the zoningColors object
   const [showANC, setShowANC] = useState(true); // Add a new state for showing or hiding ANC boundaries
   const [ancData, setAncData] = useState(null); // Add a new state for ANC GeoJSON data
+  const [totalChange, setTotalChange] = useState(0);
 
   const [showCompPlan, setShowCompPlan] = useState(true); // Add a new state for showing or hiding Comp Plan boundaries
   const [compPlanData, setCompPlanData] = useState(null); // Add a new state for Comp Plan GeoJSON data
+
+  const updateTotalChange = (change) => {
+    setTotalChange((prevTotalChange) => prevTotalChange + change);
+  };
 
   useEffect(() => {
     fetchGeoJsonData('/datasets/zoning_map.geojson').then((data) => {
@@ -84,12 +89,25 @@ const ZoningMap = () => {
           onZoneChange={(selectedZone) => setSelectedZone(selectedZone)}
           map={map} // Pass the map instance to ZoneAutocomplete
         />
+        <div style={{
+          position: 'absolute',
+          top: '100px',
+          right: '10px',
+          backgroundColor: 'white',
+          padding: '5px',
+          borderRadius: '5px',
+          zIndex: 1000 // Add a high z-index value to make sure it's displayed on top
+        }}>
+          Total Change in Households: {totalChange}
+        </div>
+
         {showZoning && geoJsonData && (
           <ZoningGeoJSON
             geoJsonData={geoJsonData}
             selectedZone={selectedZone}
             setSelectedZone={setSelectedZone}
             zoningColors={zoningColors} // Pass the zoningColors object
+            updateTotalChange={updateTotalChange}
           />
         )}
       </MapContainer>

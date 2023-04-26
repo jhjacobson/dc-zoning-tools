@@ -1,0 +1,17 @@
+name: Check the client source
+on:
+  pull_request:
+    branches:
+      - main
+jobs:
+  test:
+    name: Check the source code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Switch to the client dir
+        run: cd client
+      - name: Install packages
+        run: npm ci
+      - name: Prettier and Eslint
+        run: npm run lint

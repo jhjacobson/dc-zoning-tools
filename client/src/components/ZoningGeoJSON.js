@@ -9,7 +9,7 @@ import { area } from '@turf/turf';
 import { AREA_CONVERSION } from '../constants/areaConversion';
 import { householdsPerSqMile } from '../constants/householdsPerSqMile';
 
-const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone, updateTotalChange }) => {
+const ZoningGeoJSON = ({ geoJsonData, selectedZone, _setSelectedZone, updateTotalChange }) => {
   const selectedZoneRef = useRef(selectedZone); // <-- create a ref for selectedZone
   // Update the ref's current value whenever selectedZone changes
   useEffect(() => {

@@ -36,9 +36,11 @@ const ZoningMap = () => {
       setGeoJsonData(data);
     });
 
-    fetchGeoJsonData('/datasets/Advisory_Neighborhood_Commissions_from_2023.geojson').then((data) => {
-      setAncData(data);
-    });
+    fetchGeoJsonData('/datasets/Advisory_Neighborhood_Commissions_from_2023.geojson').then(
+      (data) => {
+        setAncData(data);
+      }
+    );
 
     fetchGeoJsonData('/datasets/Comprehensive_Plan_Planning_Areas.geojson').then((data) => {
       setCompPlanData(data);
@@ -47,12 +49,12 @@ const ZoningMap = () => {
 
   return (
     <div style={{ position: 'relative', height: '100vh' }}>
-      <MapContainer 
-        center={[38.9, -77.02]} 
-        zoom={13} 
+      <MapContainer
+        center={[38.9, -77.02]}
+        zoom={13}
         style={{ height: '100%' }}
         whenCreated={setMap} // Add the whenCreated prop to set the map instance
-        >
+      >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -89,15 +91,17 @@ const ZoningMap = () => {
           onZoneChange={(selectedZone) => setSelectedZone(selectedZone)}
           map={map} // Pass the map instance to ZoneAutocomplete
         />
-        <div style={{
-          position: 'absolute',
-          top: '100px',
-          right: '10px',
-          backgroundColor: 'white',
-          padding: '5px',
-          borderRadius: '5px',
-          zIndex: 1000 // Add a high z-index value to make sure it's displayed on top
-        }}>
+        <div
+          style={{
+            position: 'absolute',
+            top: '100px',
+            right: '10px',
+            backgroundColor: 'white',
+            padding: '5px',
+            borderRadius: '5px',
+            zIndex: 1000, // Add a high z-index value to make sure it's displayed on top
+          }}
+        >
           Total Change in Households: {totalChange}
         </div>
 

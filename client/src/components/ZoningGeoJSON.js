@@ -7,7 +7,7 @@ import { geoJsonStyle } from '../utils/zoningUtils';
 import { zoningColors } from '../constants/zoningColors';
 import { AREA_CONVERSION } from '../constants/areaConversion';
 import { householdsPerSqMile } from '../constants/householdsPerSqMile';
-import { area, centroid, booleanPointInPolygon } from '@turf/turf';
+import { area, booleanPointInPolygon } from '@turf/turf';
 
 const ZoningGeoJSON = ({
   geoJsonData,

@@ -30,23 +30,25 @@ const ZoningMap = () => {
 
   const fetchDataAndUpdateState = async (datasetPath, setStateFunction) => {
     const data = await fetchGeoJsonData(datasetPath);
-  
+
     if (datasetPath === '/datasets/zoning_map.geojson') {
       data.features.forEach((feature) => {
         feature.properties.originalZoningLabel = feature.properties.ZONING_LABEL;
       });
     }
-  
+
     setStateFunction(data);
   };
-  
+
   useEffect(() => {
     fetchDataAndUpdateState('/datasets/zoning_map.geojson', setGeoJsonData);
-    fetchDataAndUpdateState('/datasets/Advisory_Neighborhood_Commissions_from_2023.geojson', setAncData);
+    fetchDataAndUpdateState(
+      '/datasets/Advisory_Neighborhood_Commissions_from_2023.geojson',
+      setAncData
+    );
     fetchDataAndUpdateState('/datasets/Wards_from_2022.geojson', setWardData);
     fetchDataAndUpdateState('/datasets/Comprehensive_Plan_Planning_Areas.geojson', setCompPlanData);
   }, []);
-  
 
   return (
     <div style={{ position: 'relative', height: '100vh' }}>

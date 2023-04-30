@@ -28,7 +28,15 @@ const ZoneAutocomplete = ({ zoneLabels, onZoneChange, map }) => {
   };
 
   return (
-    <div style={{ position: 'absolute', top: 10, left: 50, zIndex: 1000, width: '250px' }}>
+    <div
+      style={{
+        position: 'absolute',
+        top: 10,
+        left: 50,
+        zIndex: 1000,
+        width: '250px',
+      }}
+    >
       <Select
         placeholder="Select a zoning label..."
         options={options}

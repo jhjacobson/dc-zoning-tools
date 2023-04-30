@@ -63,16 +63,25 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, _setSelectedZone, updateTota
     const zoneAreaInSquareMi = calculateArea(feature);
     const oldNumberOfHouseholds = Math.round(zoneAreaInSquareMi * oldHouseholdsPerSqMileValue);
 
+    const clickedPoint = [e.latlng.lng, e.latlng.lat]; //[-77.02528059482576,38.92413562419707]
+    const containingANC = getNameForAreaOfPoint(clickedPoint, ancData, "ANC_ID"); //getContainingANC(clickedPoint);
+    const containingPlanningArea = getNameForAreaOfPoint(clickedPoint, compPlanData, "NAME"); //getContainingPlanningArea(clickedPoint);
+    const containingWard = getNameForAreaOfPoint(clickedPoint, wardData, "NAME");
+
     updateZoningLabel(feature, feature.properties.originalZoningLabel);
+
+    const ancText = containingANC ? `<strong>ANC:</strong> ${containingANC}<br>` : '';
+    const planningAreaText = containingPlanningArea ? `<strong>Planning Area:</strong> ${containingPlanningArea}<br>` : '';
+    const wardAreaText = containingWard ? `<strong>Ward:</strong> ${containingWard}<br>` : '';
 
     const householdsPerSqMileValue = householdsPerSqMile[feature.properties.ZONING_LABEL] || 0;
     const numberOfHouseholds = Math.round(zoneAreaInSquareMi * householdsPerSqMileValue);
-    const diff = oldNumberOfHouseholds - numberOfHouseholds;
+    const diff = numberOfHouseholds - oldNumberOfHouseholds;
 
     updateTotalChange(diff); // Update the total change in households
 
     e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
-    e.target.setPopupContent(generatePopupContent(feature));
+    e.target.setPopupContent(`${generatePopupContent(feature)}${ancText}${planningAreaText}${wardAreaText}`);
   };
 
   const onFeatureClick = (e, feature, updateTotalChange) => {

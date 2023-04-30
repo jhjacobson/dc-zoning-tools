@@ -49,6 +49,13 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, _setSelectedZone, updateTota
         ${changeInHouseholds}
       `;
   };
+  const getNameForAreaOfPoint = (point, areaData, propertyKey) => {
+    const containingArea = areaData.features.find((areaFeature) => {
+      const isPointInPolygon = booleanPointInPolygon(point, areaFeature);
+      return isPointInPolygon;
+    });
+    return containingArea ? containingArea.properties[propertyKey] : null;
+  };
 
   const onRevertClick = (e, feature, updateTotalChange) => {
     const oldZoningLabel = feature.properties.ZONING_LABEL;
@@ -74,14 +81,6 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, _setSelectedZone, updateTota
     const oldHouseholdsPerSqMileValue = householdsPerSqMile[oldZoningLabel] || 0;
     const zoneAreaInSquareMi = calculateArea(feature);
     const oldNumberOfHouseholds = Math.round(zoneAreaInSquareMi * oldHouseholdsPerSqMileValue);
-
-    const getNameForAreaOfPoint = (point, areaData, propertyKey) => {
-      const containingArea = areaData.features.find((areaFeature) => {
-        const isPointInPolygon = booleanPointInPolygon(point, areaFeature);
-        return isPointInPolygon;
-      });
-      return containingArea ? containingArea.properties[propertyKey] : null;
-    };
     
     const clickedPoint = [e.latlng.lng, e.latlng.lat]; //[-77.02528059482576,38.92413562419707]
     const containingANC = getNameForAreaOfPoint(clickedPoint, ancData, "ANC_ID"); //getContainingANC(clickedPoint);

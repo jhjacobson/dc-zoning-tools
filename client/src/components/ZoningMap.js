@@ -28,31 +28,25 @@ const ZoningMap = () => {
     setTotalChange((prevTotalChange) => prevTotalChange + change);
   };
 
-  useEffect(() => {
-    fetchGeoJsonData('/datasets/zoning_map.geojson').then((data) => {
-      // Store original zoning labels
+  const fetchDataAndUpdateState = async (datasetPath, setStateFunction) => {
+    const data = await fetchGeoJsonData(datasetPath);
+  
+    if (datasetPath === '/datasets/zoning_map.geojson') {
       data.features.forEach((feature) => {
         feature.properties.originalZoningLabel = feature.properties.ZONING_LABEL;
       });
-      setGeoJsonData(data);
-    });
-
-    fetchGeoJsonData('/datasets/Advisory_Neighborhood_Commissions_from_2023.geojson').then(
-      (data) => {
-        setAncData(data);
-      }
-    );
-
-    fetchGeoJsonData('/datasets/Wards_from_2022.geojson').then(
-      (data) => {
-        setWardData(data);
-      }
-    );
-
-    fetchGeoJsonData('/datasets/Comprehensive_Plan_Planning_Areas.geojson').then((data) => {
-      setCompPlanData(data);
-    });
+    }
+  
+    setStateFunction(data);
+  };
+  
+  useEffect(() => {
+    fetchDataAndUpdateState('/datasets/zoning_map.geojson', setGeoJsonData);
+    fetchDataAndUpdateState('/datasets/Advisory_Neighborhood_Commissions_from_2023.geojson', setAncData);
+    fetchDataAndUpdateState('/datasets/Wards_from_2022.geojson', setWardData);
+    fetchDataAndUpdateState('/datasets/Comprehensive_Plan_Planning_Areas.geojson', setCompPlanData);
   }, []);
+  
 
   return (
     <div style={{ position: 'relative', height: '100vh' }}>

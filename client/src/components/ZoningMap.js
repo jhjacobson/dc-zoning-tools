@@ -18,6 +18,7 @@ const ZoningMap = () => {
   const zoneLabels = Object.keys(zoningColors); // <-- Get the zone labels from the zoningColors object
   const [showANC, setShowANC] = useState(true); // Add a new state for showing or hiding ANC boundaries
   const [ancData, setAncData] = useState(null); // Add a new state for ANC GeoJSON data
+  const [wardData, setWardData] = useState(null);
   const [totalChange, setTotalChange] = useState(0);
 
   const [showCompPlan, setShowCompPlan] = useState(true); // Add a new state for showing or hiding Comp Plan boundaries
@@ -39,6 +40,12 @@ const ZoningMap = () => {
     fetchGeoJsonData('/datasets/Advisory_Neighborhood_Commissions_from_2023.geojson').then(
       (data) => {
         setAncData(data);
+      }
+    );
+
+    fetchGeoJsonData('/datasets/Wards_from_2022.geojson').then(
+      (data) => {
+        setWardData(data);
       }
     );
 
@@ -114,6 +121,7 @@ const ZoningMap = () => {
             updateTotalChange={updateTotalChange}
             ancData={ancData}
             compPlanData={compPlanData}
+            wardData={wardData}
           />
         )}
       </MapContainer>

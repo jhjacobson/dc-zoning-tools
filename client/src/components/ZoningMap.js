@@ -112,6 +112,8 @@ const ZoningMap = () => {
             setSelectedZone={setSelectedZone}
             zoningColors={zoningColors} // Pass the zoningColors object
             updateTotalChange={updateTotalChange}
+            ancData={ancData}
+            compPlanData={compPlanData}
           />
         )}
       </MapContainer>

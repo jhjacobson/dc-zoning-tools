@@ -5,11 +5,11 @@ import React, { useRef, useEffect } from 'react';
 import { GeoJSON } from 'react-leaflet';
 import { geoJsonStyle } from '../utils/zoningUtils';
 import { zoningColors } from '../constants/zoningColors';
-import { area } from '@turf/turf';
 import { AREA_CONVERSION } from '../constants/areaConversion';
 import { householdsPerSqMile } from '../constants/householdsPerSqMile';
+import { area, centroid, booleanPointInPolygon } from '@turf/turf';
 
-const ZoningGeoJSON = ({ geoJsonData, selectedZone, _setSelectedZone, updateTotalChange }) => {
+const ZoningGeoJSON = ({ geoJsonData, selectedZone, _setSelectedZone, updateTotalChange, ancData, compPlanData }) => {
   const selectedZoneRef = useRef(selectedZone); // <-- create a ref for selectedZone
   // Update the ref's current value whenever selectedZone changes
   useEffect(() => {
@@ -39,7 +39,7 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, _setSelectedZone, updateTota
     const oldHouseholdsPerSqMileValue = householdsPerSqMile[originalZoningLabel] || 0;
     const oldNumberOfHouseholds = Math.round(zoneAreaInSquareMi * oldHouseholdsPerSqMileValue);
     const diff = numberOfHouseholds - oldNumberOfHouseholds;
-    const changeInHouseholds = `<strong>Change in Households:</strong> ${diff}`;
+    const changeInHouseholds = `<strong>Change in Households:</strong> ${diff}<br>`;
 
     return `
         <strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}<br>
@@ -75,9 +75,33 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, _setSelectedZone, updateTota
     const zoneAreaInSquareMi = calculateArea(feature);
     const oldNumberOfHouseholds = Math.round(zoneAreaInSquareMi * oldHouseholdsPerSqMileValue);
 
+    // Find the ANC and Planning Area for the clicked feature
+    const getContainingANC = (point) => {
+      console.log('Input to booleanPointInPolygon:', point);
+      console.log('ancData object:', ancData); // Log the entire ancData object
+      const containingANC = ancData.features.find((ancFeature) => {
+        console.log('Current ancFeature:', ancFeature); // Log the current feature
+        console.log('Current ancFeature geometry:', ancFeature.geometry); // Log the geometry of the current feature    
+        const isPointInPolygon = booleanPointInPolygon(point, ancFeature);
+        console.log(`isPointInPolygon result: ${isPointInPolygon}`)
+        console.log(`ancFeature data: ${ancFeature}`);
+        return isPointInPolygon; // Add this line to return the result
+      });
+      console.log('Output from getContainingANC', containingANC.properties.ANC_ID);
+      return containingANC ? containingANC.properties.ANC_ID : null;
+    };
+    
+    console.log(e.latlng);
+    const clickedPoint = [e.latlng.lng, e.latlng.lat]; //[-77.02528059482576,38.92413562419707]
+    console.log(`latlong: ${e.latlng} and ${e.latlng.lat}`)
+    console.log(clickedPoint);
+    const containingANC = getContainingANC(clickedPoint);
+
     if (currentSelectedZone) {
       updateZoningLabel(feature, currentSelectedZone);
     }
+
+    const ancText = containingANC ? `<strong>ANC:</strong> ${containingANC}<br>` : '';
 
     const householdsPerSqMileValue = householdsPerSqMile[feature.properties.ZONING_LABEL] || 0;
     const numberOfHouseholds = Math.round(zoneAreaInSquareMi * householdsPerSqMileValue);
@@ -86,7 +110,7 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, _setSelectedZone, updateTota
     updateTotalChange(diff); // Update the total change in households
 
     e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
-    e.target.setPopupContent(generatePopupContent(feature));
+    e.target.setPopupContent(`${generatePopupContent(feature)}${ancText}`);
   };
 
   return (

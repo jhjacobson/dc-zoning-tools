@@ -57,6 +57,50 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, _setSelectedZone, updateTota
     return containingArea ? containingArea.properties[propertyKey] : null;
   };
 
+  const updateFeaturePopupAndStyle = (e, feature, updateTotalChange, newZoningLabel = null) => {
+    const oldZoningLabel = feature.properties.ZONING_LABEL;
+    const oldHouseholdsPerSqMileValue = householdsPerSqMile[oldZoningLabel] || 0;
+    const zoneAreaInSquareMi = calculateArea(feature);
+    const oldNumberOfHouseholds = Math.round(zoneAreaInSquareMi * oldHouseholdsPerSqMileValue);
+  
+    const clickedPoint = [e.latlng.lng, e.latlng.lat];
+    const containingANC = getNameForAreaOfPoint(clickedPoint, ancData, "ANC_ID");
+    const containingPlanningArea = getNameForAreaOfPoint(clickedPoint, compPlanData, "NAME");
+    const containingWard = getNameForAreaOfPoint(clickedPoint, wardData, "NAME");
+  
+    if (newZoningLabel) {
+      updateZoningLabel(feature, newZoningLabel);
+    }
+  
+    const ancText = containingANC ? `<strong>ANC:</strong> ${containingANC}<br>` : '';
+    const planningAreaText = containingPlanningArea ? `<strong>Planning Area:</strong> ${containingPlanningArea}<br>` : '';
+    const wardAreaText = containingWard ? `<strong>Ward:</strong> ${containingWard}<br>` : '';
+  
+    const householdsPerSqMileValue = householdsPerSqMile[feature.properties.ZONING_LABEL] || 0;
+    const numberOfHouseholds = Math.round(zoneAreaInSquareMi * householdsPerSqMileValue);
+    const diff = numberOfHouseholds - oldNumberOfHouseholds;
+  
+    updateTotalChange(diff); // Update the total change in households
+  
+    e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
+    e.target.setPopupContent(`${generatePopupContent(feature)}${ancText}${planningAreaText}${wardAreaText}`);
+  };
+  
+  const onRevertClick = (e, feature, updateTotalChange) => {
+    updateFeaturePopupAndStyle(e, feature, updateTotalChange, feature.properties.originalZoningLabel);
+  };
+  
+  const onFeatureClick = (e, feature, updateTotalChange) => {
+    const currentSelectedZone = selectedZoneRef.current;
+    if (currentSelectedZone) {
+      updateFeaturePopupAndStyle(e, feature, updateTotalChange, currentSelectedZone);
+    } else {
+      updateFeaturePopupAndStyle(e, feature, updateTotalChange);
+    }
+  };
+  
+
+/*
   const onRevertClick = (e, feature, updateTotalChange) => {
     const oldZoningLabel = feature.properties.ZONING_LABEL;
     const oldHouseholdsPerSqMileValue = householdsPerSqMile[oldZoningLabel] || 0;
@@ -113,6 +157,7 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, _setSelectedZone, updateTota
     e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
     e.target.setPopupContent(`${generatePopupContent(feature)}${ancText}${planningAreaText}${wardAreaText}`);
   };
+*/
 
   return (
     <GeoJSON

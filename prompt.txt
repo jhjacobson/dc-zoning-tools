@@ -37,96 +37,11 @@ Here is the file structure:
         - fetchGeoJSONData.js
         - zoningUtils.js
 
-I currently have the zoning map displayed (stored in public/zoning_map.geojson). I have defined the average number of households per square mile per zoning label. Currently, when I click on a zone, it displays the zoning label, the area in square miles of the zone, and the predicted number of households in the zone. When I change the zone, it displays the change in predicted number of households. As an example, if something is RA-2, it might have 20 people per square mile. If I bump it to RA-3, it might increase to 40 people per square mile. Now, I need help displaying the total change across all of the zoning updates. Can you help me with this?
+When I click on a zone, I see a popup with the current zoning label, the original zoning label, the area, households, change in households, and the ANC and planning area. However, it is currently just checking to see what ANC a zone exists in, but a zone can exist in multiple ANCs. I need to be able to click a point and have the map tell me what ANC that point exists in. Can you help me with that?
 
-Here are some code files in case they help. Let me know if you need others.
-
-Code for ZoningGeoJSON.js:
-import React, { useRef, useEffect } from 'react';
-import { GeoJSON } from 'react-leaflet';
-import { geoJsonStyle } from '../utils/zoningUtils';
-import { zoningColors } from '../constants/zoningColors';
-import { area } from '@turf/turf';
-import { AREA_CONVERSION } from "../constants/areaConversion";
-import { householdsPerSqMile } from '../constants/householdsPerSqMile';
-
-const ZoningGeoJSON = ({ geoJsonData, selectedZone, setSelectedZone }) => {
-    const selectedZoneRef = useRef(selectedZone); // <-- create a ref for selectedZone
-    // Update the ref's current value whenever selectedZone changes
-    useEffect(() => {
-      selectedZoneRef.current = selectedZone;
-    }, [selectedZone]);
-  
-    const updateZoningLabel = (feature, label) => {
-      feature.properties.ZONING_LABEL = label;
-    };
-
-    const calculateArea = (feature) => {
-      const geoJsonFeature = {
-        type: "Feature",
-        geometry: feature.geometry,
-        properties: feature.properties,
-      };
-      const zoneArea = area(geoJsonFeature);
-      return (zoneArea * AREA_CONVERSION.SQ_M_TO_SQ_MI).toFixed(2);
-    };
-
-    const generatePopupContent = (feature) => {
-      const zoneAreaInSquareMi = calculateArea(feature);
-      const householdsPerSqMileValue = householdsPerSqMile[feature.properties.ZONING_LABEL] || 0;
-      const numberOfHouseholds = Math.round(zoneAreaInSquareMi * householdsPerSqMileValue);
-    
-      const originalZoningLabel = feature.properties.originalZoningLabel;
-      const oldHouseholdsPerSqMileValue = householdsPerSqMile[originalZoningLabel] || 0;
-      const oldNumberOfHouseholds = Math.round(zoneAreaInSquareMi * oldHouseholdsPerSqMileValue);
-      const diff = numberOfHouseholds - oldNumberOfHouseholds;
-      const changeInHouseholds = `<strong>Change in Households:</strong> ${diff}`;
-    
-      return `
-        <strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}<br>
-        <strong>Original Zoning Label:</strong> ${originalZoningLabel}<br>
-        <strong>Area:</strong> ${zoneAreaInSquareMi} mi²<br>
-        <strong>Households:</strong> ${numberOfHouseholds}<br>
-        ${changeInHouseholds}
-      `;
-    };
-    
-
-    const onRevertClick = (e, feature) => {
-      updateZoningLabel(feature, feature.properties.originalZoningLabel);
-      e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
-      e.target.setPopupContent(generatePopupContent(feature));
-    };
-
-    const onFeatureClick = (e, feature) => {
-      const currentSelectedZone = selectedZoneRef.current; // <-- get the current value of the ref
-      if (currentSelectedZone) {
-        updateZoningLabel(feature, currentSelectedZone);
-      }
-      e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
-      e.target.setPopupContent(generatePopupContent(feature)); // Remove the oldZoningLabel parameter
-    };
-    
-  
-    return (
-      <GeoJSON
-        key="geojson-layer"
-        data={geoJsonData}
-        style={(feature) => geoJsonStyle(feature, 'ZONING_LABEL', zoningColors)}
-        onEachFeature={(feature, layer) => {
-          layer.on({
-            click: (e) => onFeatureClick(e, feature),
-            contextmenu: (e) => onRevertClick(e, feature), // Add this line to handle right-click events
-          });
-          layer.bindPopup(); // create popup
-        }}
-      />
-    );
-  };
-  
-  export default ZoningGeoJSON;
-  
+Here is some relevant code, but let me know if there is any other code you need:
 Code for ZoningMap.js:
+// ZoningMap.js
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -146,9 +61,14 @@ const ZoningMap = () => {
   const zoneLabels = Object.keys(zoningColors); // <-- Get the zone labels from the zoningColors object
   const [showANC, setShowANC] = useState(true); // Add a new state for showing or hiding ANC boundaries
   const [ancData, setAncData] = useState(null); // Add a new state for ANC GeoJSON data
+  const [totalChange, setTotalChange] = useState(0);
 
   const [showCompPlan, setShowCompPlan] = useState(true); // Add a new state for showing or hiding Comp Plan boundaries
   const [compPlanData, setCompPlanData] = useState(null); // Add a new state for Comp Plan GeoJSON data
+
+  const updateTotalChange = (change) => {
+    setTotalChange((prevTotalChange) => prevTotalChange + change);
+  };
 
   useEffect(() => {
     fetchGeoJsonData('/datasets/zoning_map.geojson').then((data) => {
@@ -159,9 +79,11 @@ const ZoningMap = () => {
       setGeoJsonData(data);
     });
 
-    fetchGeoJsonData('/datasets/Advisory_Neighborhood_Commissions_from_2023.geojson').then((data) => {
-      setAncData(data);
-    });
+    fetchGeoJsonData('/datasets/Advisory_Neighborhood_Commissions_from_2023.geojson').then(
+      (data) => {
+        setAncData(data);
+      }
+    );
 
     fetchGeoJsonData('/datasets/Comprehensive_Plan_Planning_Areas.geojson').then((data) => {
       setCompPlanData(data);
@@ -170,12 +92,12 @@ const ZoningMap = () => {
 
   return (
     <div style={{ position: 'relative', height: '100vh' }}>
-      <MapContainer 
-        center={[38.9, -77.02]} 
-        zoom={13} 
+      <MapContainer
+        center={[38.9, -77.02]}
+        zoom={13}
         style={{ height: '100%' }}
         whenCreated={setMap} // Add the whenCreated prop to set the map instance
-        >
+      >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -212,12 +134,29 @@ const ZoningMap = () => {
           onZoneChange={(selectedZone) => setSelectedZone(selectedZone)}
           map={map} // Pass the map instance to ZoneAutocomplete
         />
+        <div
+          style={{
+            position: 'absolute',
+            top: '100px',
+            right: '10px',
+            backgroundColor: 'white',
+            padding: '5px',
+            borderRadius: '5px',
+            zIndex: 1000, // Add a high z-index value to make sure it's displayed on top
+          }}
+        >
+          Total Change in Households: {totalChange}
+        </div>
+
         {showZoning && geoJsonData && (
           <ZoningGeoJSON
             geoJsonData={geoJsonData}
             selectedZone={selectedZone}
             setSelectedZone={setSelectedZone}
             zoningColors={zoningColors} // Pass the zoningColors object
+            updateTotalChange={updateTotalChange}
+            ancData={ancData}
+            compPlanData={compPlanData}
           />
         )}
       </MapContainer>
@@ -226,3 +165,128 @@ const ZoningMap = () => {
 };
 
 export default ZoningMap;
+
+Code for ZoningGeoJSON.js:
+// Responsible for rendering the GeoJSON layer with the zoning data.
+// It takes care of styling the zones based on their labels and handles
+// click events on each zone feature.
+import React, { useRef, useEffect } from 'react';
+import { GeoJSON } from 'react-leaflet';
+import { geoJsonStyle } from '../utils/zoningUtils';
+import { zoningColors } from '../constants/zoningColors';
+import { AREA_CONVERSION } from '../constants/areaConversion';
+import { householdsPerSqMile } from '../constants/householdsPerSqMile';
+import { area, centroid, booleanPointInPolygon } from '@turf/turf';
+
+const ZoningGeoJSON = ({ geoJsonData, selectedZone, _setSelectedZone, updateTotalChange, ancData, compPlanData }) => {
+  const selectedZoneRef = useRef(selectedZone); // <-- create a ref for selectedZone
+  // Update the ref's current value whenever selectedZone changes
+  useEffect(() => {
+    selectedZoneRef.current = selectedZone;
+  }, [selectedZone]);
+
+  const updateZoningLabel = (feature, label) => {
+    feature.properties.ZONING_LABEL = label;
+  };
+
+  const calculateArea = (feature) => {
+    const geoJsonFeature = {
+      type: 'Feature',
+      geometry: feature.geometry,
+      properties: feature.properties,
+    };
+    const zoneArea = area(geoJsonFeature);
+    return (zoneArea * AREA_CONVERSION.SQ_M_TO_SQ_MI).toFixed(2);
+  };
+
+  const generatePopupContent = (feature) => {
+    const zoneAreaInSquareMi = calculateArea(feature);
+    const householdsPerSqMileValue = householdsPerSqMile[feature.properties.ZONING_LABEL] || 0;
+    const numberOfHouseholds = Math.round(zoneAreaInSquareMi * householdsPerSqMileValue);
+
+    const originalZoningLabel = feature.properties.originalZoningLabel;
+    const oldHouseholdsPerSqMileValue = householdsPerSqMile[originalZoningLabel] || 0;
+    const oldNumberOfHouseholds = Math.round(zoneAreaInSquareMi * oldHouseholdsPerSqMileValue);
+    const diff = numberOfHouseholds - oldNumberOfHouseholds;
+    const changeInHouseholds = `<strong>Change in Households:</strong> ${diff}<br>`;
+
+    return `
+        <strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}<br>
+        <strong>Original Zoning Label:</strong> ${originalZoningLabel}<br>
+        <strong>Area:</strong> ${zoneAreaInSquareMi} mi²<br>
+        <strong>Households:</strong> ${numberOfHouseholds}<br>
+        ${changeInHouseholds}
+      `;
+  };
+
+  const onRevertClick = (e, feature, updateTotalChange) => {
+    const oldZoningLabel = feature.properties.ZONING_LABEL;
+    const oldHouseholdsPerSqMileValue = householdsPerSqMile[oldZoningLabel] || 0;
+    const zoneAreaInSquareMi = calculateArea(feature);
+    const oldNumberOfHouseholds = Math.round(zoneAreaInSquareMi * oldHouseholdsPerSqMileValue);
+
+    updateZoningLabel(feature, feature.properties.originalZoningLabel);
+
+    const householdsPerSqMileValue = householdsPerSqMile[feature.properties.ZONING_LABEL] || 0;
+    const numberOfHouseholds = Math.round(zoneAreaInSquareMi * householdsPerSqMileValue);
+    const diff = oldNumberOfHouseholds - numberOfHouseholds;
+
+    updateTotalChange(diff); // Update the total change in households
+
+    e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
+    e.target.setPopupContent(generatePopupContent(feature));
+  };
+
+  const onFeatureClick = (e, feature, updateTotalChange) => {
+    const currentSelectedZone = selectedZoneRef.current;
+    const oldZoningLabel = feature.properties.ZONING_LABEL;
+    const oldHouseholdsPerSqMileValue = householdsPerSqMile[oldZoningLabel] || 0;
+    const zoneAreaInSquareMi = calculateArea(feature);
+    const oldNumberOfHouseholds = Math.round(zoneAreaInSquareMi * oldHouseholdsPerSqMileValue);
+
+    // Find the ANC and Planning Area for the clicked feature
+    const clickedFeatureCenter = centroid(feature);
+    const containingANC = ancData.features.find((ancFeature) =>
+      booleanPointInPolygon(clickedFeatureCenter, ancFeature)
+    );
+    const containingPlanningArea = compPlanData.features.find((planningAreaFeature) =>
+      booleanPointInPolygon(clickedFeatureCenter, planningAreaFeature)
+    );
+
+    if (currentSelectedZone) {
+      updateZoningLabel(feature, currentSelectedZone);
+    }
+
+    const ancText = containingANC ? `<strong>ANC:</strong> ${containingANC.properties.ANC_ID}<br>` : '';
+    const planningAreaText = containingPlanningArea
+      ? `<strong>Planning Area:</strong> ${containingPlanningArea.properties.PLAN_NAME}<br>`
+      : '';
+
+
+    const householdsPerSqMileValue = householdsPerSqMile[feature.properties.ZONING_LABEL] || 0;
+    const numberOfHouseholds = Math.round(zoneAreaInSquareMi * householdsPerSqMileValue);
+    const diff = numberOfHouseholds - oldNumberOfHouseholds;
+
+    updateTotalChange(diff); // Update the total change in households
+
+    e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
+    e.target.setPopupContent(`${generatePopupContent(feature)}${ancText}${planningAreaText}`);
+  };
+
+  return (
+    <GeoJSON
+      key="geojson-layer"
+      data={geoJsonData}
+      style={(feature) => geoJsonStyle(feature, 'ZONING_LABEL', zoningColors)}
+      onEachFeature={(feature, layer) => {
+        layer.on({
+          click: (e) => onFeatureClick(e, feature, updateTotalChange),
+          contextmenu: (e) => onRevertClick(e, feature, updateTotalChange), // Add this line to handle right-click events
+        });
+        layer.bindPopup(); // create popup
+      }}
+    />
+  );
+};
+
+export default ZoningGeoJSON;

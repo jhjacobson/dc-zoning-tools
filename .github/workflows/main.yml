@@ -9,9 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Switch to the client dir
-        run: cd client
       - name: Install packages
-        run: npm ci
+        run: |
+          cd client
+          npm ci
       - name: Prettier and Eslint
-        run: npm run lint
+        run: |
+          cd client
+          npm run lint

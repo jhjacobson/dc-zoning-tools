@@ -5,11 +5,19 @@ import React, { useRef, useEffect } from 'react';
 import { GeoJSON } from 'react-leaflet';
 import { geoJsonStyle } from '../utils/zoningUtils';
 import { zoningColors } from '../constants/zoningColors';
-import { area } from '@turf/turf';
 import { AREA_CONVERSION } from '../constants/areaConversion';
 import { householdsPerSqMile } from '../constants/householdsPerSqMile';
+import { area, booleanPointInPolygon } from '@turf/turf';
 
-const ZoningGeoJSON = ({ geoJsonData, selectedZone, _setSelectedZone, updateTotalChange }) => {
+const ZoningGeoJSON = ({
+  geoJsonData,
+  selectedZone,
+  _setSelectedZone,
+  updateTotalChange,
+  ancData,
+  compPlanData,
+  wardData,
+}) => {
   const selectedZoneRef = useRef(selectedZone); // <-- create a ref for selectedZone
   // Update the ref's current value whenever selectedZone changes
   useEffect(() => {
@@ -39,7 +47,7 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, _setSelectedZone, updateTota
     const oldHouseholdsPerSqMileValue = householdsPerSqMile[originalZoningLabel] || 0;
     const oldNumberOfHouseholds = Math.round(zoneAreaInSquareMi * oldHouseholdsPerSqMileValue);
     const diff = numberOfHouseholds - oldNumberOfHouseholds;
-    const changeInHouseholds = `<strong>Change in Households:</strong> ${diff}`;
+    const changeInHouseholds = `<strong>Change in Households:</strong> ${diff}<br>`;
 
     return `
         <strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}<br>
@@ -49,35 +57,34 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, _setSelectedZone, updateTota
         ${changeInHouseholds}
       `;
   };
-
-  const onRevertClick = (e, feature, updateTotalChange) => {
-    const oldZoningLabel = feature.properties.ZONING_LABEL;
-    const oldHouseholdsPerSqMileValue = householdsPerSqMile[oldZoningLabel] || 0;
-    const zoneAreaInSquareMi = calculateArea(feature);
-    const oldNumberOfHouseholds = Math.round(zoneAreaInSquareMi * oldHouseholdsPerSqMileValue);
-
-    updateZoningLabel(feature, feature.properties.originalZoningLabel);
-
-    const householdsPerSqMileValue = householdsPerSqMile[feature.properties.ZONING_LABEL] || 0;
-    const numberOfHouseholds = Math.round(zoneAreaInSquareMi * householdsPerSqMileValue);
-    const diff = oldNumberOfHouseholds - numberOfHouseholds;
-
-    updateTotalChange(diff); // Update the total change in households
-
-    e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
-    e.target.setPopupContent(generatePopupContent(feature));
+  const getNameForAreaOfPoint = (point, areaData, propertyKey) => {
+    const containingArea = areaData.features.find((areaFeature) => {
+      const isPointInPolygon = booleanPointInPolygon(point, areaFeature);
+      return isPointInPolygon;
+    });
+    return containingArea ? containingArea.properties[propertyKey] : null;
   };
 
-  const onFeatureClick = (e, feature, updateTotalChange) => {
-    const currentSelectedZone = selectedZoneRef.current;
+  const updateFeaturePopupAndStyle = (e, feature, updateTotalChange, newZoningLabel = null) => {
     const oldZoningLabel = feature.properties.ZONING_LABEL;
     const oldHouseholdsPerSqMileValue = householdsPerSqMile[oldZoningLabel] || 0;
     const zoneAreaInSquareMi = calculateArea(feature);
     const oldNumberOfHouseholds = Math.round(zoneAreaInSquareMi * oldHouseholdsPerSqMileValue);
 
-    if (currentSelectedZone) {
-      updateZoningLabel(feature, currentSelectedZone);
+    const clickedPoint = [e.latlng.lng, e.latlng.lat];
+    const containingANC = getNameForAreaOfPoint(clickedPoint, ancData, 'ANC_ID');
+    const containingPlanningArea = getNameForAreaOfPoint(clickedPoint, compPlanData, 'NAME');
+    const containingWard = getNameForAreaOfPoint(clickedPoint, wardData, 'NAME');
+
+    if (newZoningLabel) {
+      updateZoningLabel(feature, newZoningLabel);
     }
+
+    const ancText = containingANC ? `<strong>ANC:</strong> ${containingANC}<br>` : '';
+    const planningAreaText = containingPlanningArea
+      ? `<strong>Planning Area:</strong> ${containingPlanningArea}<br>`
+      : '';
+    const wardAreaText = containingWard ? `<strong>Ward:</strong> ${containingWard}<br>` : '';
 
     const householdsPerSqMileValue = householdsPerSqMile[feature.properties.ZONING_LABEL] || 0;
     const numberOfHouseholds = Math.round(zoneAreaInSquareMi * householdsPerSqMileValue);
@@ -86,7 +93,27 @@ const ZoningGeoJSON = ({ geoJsonData, selectedZone, _setSelectedZone, updateTota
     updateTotalChange(diff); // Update the total change in households
 
     e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
-    e.target.setPopupContent(generatePopupContent(feature));
+    e.target.setPopupContent(
+      `${generatePopupContent(feature)}${ancText}${planningAreaText}${wardAreaText}`
+    );
+  };
+
+  const onRevertClick = (e, feature, updateTotalChange) => {
+    updateFeaturePopupAndStyle(
+      e,
+      feature,
+      updateTotalChange,
+      feature.properties.originalZoningLabel
+    );
+  };
+
+  const onFeatureClick = (e, feature, updateTotalChange) => {
+    const currentSelectedZone = selectedZoneRef.current;
+    if (currentSelectedZone) {
+      updateFeaturePopupAndStyle(e, feature, updateTotalChange, currentSelectedZone);
+    } else {
+      updateFeaturePopupAndStyle(e, feature, updateTotalChange);
+    }
   };
 
   return (

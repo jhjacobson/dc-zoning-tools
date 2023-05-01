@@ -18,6 +18,7 @@ const ZoningMap = () => {
   const zoneLabels = Object.keys(zoningColors); // <-- Get the zone labels from the zoningColors object
   const [showANC, setShowANC] = useState(true); // Add a new state for showing or hiding ANC boundaries
   const [ancData, setAncData] = useState(null); // Add a new state for ANC GeoJSON data
+  const [wardData, setWardData] = useState(null);
   const [totalChange, setTotalChange] = useState(0);
 
   const [showCompPlan, setShowCompPlan] = useState(true); // Add a new state for showing or hiding Comp Plan boundaries
@@ -27,24 +28,26 @@ const ZoningMap = () => {
     setTotalChange((prevTotalChange) => prevTotalChange + change);
   };
 
-  useEffect(() => {
-    fetchGeoJsonData('/datasets/zoning_map.geojson').then((data) => {
-      // Store original zoning labels
+  const fetchDataAndUpdateState = async (datasetPath, setStateFunction) => {
+    const data = await fetchGeoJsonData(datasetPath);
+
+    if (datasetPath === '/datasets/zoning_map.geojson') {
       data.features.forEach((feature) => {
         feature.properties.originalZoningLabel = feature.properties.ZONING_LABEL;
       });
-      setGeoJsonData(data);
-    });
+    }
 
-    fetchGeoJsonData('/datasets/Advisory_Neighborhood_Commissions_from_2023.geojson').then(
-      (data) => {
-        setAncData(data);
-      }
+    setStateFunction(data);
+  };
+
+  useEffect(() => {
+    fetchDataAndUpdateState('/datasets/zoning_map.geojson', setGeoJsonData);
+    fetchDataAndUpdateState(
+      '/datasets/Advisory_Neighborhood_Commissions_from_2023.geojson',
+      setAncData
     );
-
-    fetchGeoJsonData('/datasets/Comprehensive_Plan_Planning_Areas.geojson').then((data) => {
-      setCompPlanData(data);
-    });
+    fetchDataAndUpdateState('/datasets/Wards_from_2022.geojson', setWardData);
+    fetchDataAndUpdateState('/datasets/Comprehensive_Plan_Planning_Areas.geojson', setCompPlanData);
   }, []);
 
   return (
@@ -112,6 +115,9 @@ const ZoningMap = () => {
             setSelectedZone={setSelectedZone}
             zoningColors={zoningColors} // Pass the zoningColors object
             updateTotalChange={updateTotalChange}
+            ancData={ancData}
+            compPlanData={compPlanData}
+            wardData={wardData}
           />
         )}
       </MapContainer>

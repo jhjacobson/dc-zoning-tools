@@ -17,6 +17,7 @@ const ZoningGeoJSON = ({
   ancData,
   compPlanData,
   wardData,
+  flumData
 }) => {
   const selectedZoneRef = useRef(selectedZone); // <-- create a ref for selectedZone
   // Update the ref's current value whenever selectedZone changes
@@ -75,6 +76,7 @@ const ZoningGeoJSON = ({
     const containingANC = getNameForAreaOfPoint(clickedPoint, ancData, 'ANC_ID');
     const containingPlanningArea = getNameForAreaOfPoint(clickedPoint, compPlanData, 'NAME');
     const containingWard = getNameForAreaOfPoint(clickedPoint, wardData, 'NAME');
+    const containingFLUM = getNameForAreaOfPoint(clickedPoint, flumData, 'ALLCODES');
 
     if (newZoningLabel) {
       updateZoningLabel(feature, newZoningLabel);
@@ -85,6 +87,8 @@ const ZoningGeoJSON = ({
       ? `<strong>Planning Area:</strong> ${containingPlanningArea}<br>`
       : '';
     const wardAreaText = containingWard ? `<strong>Ward:</strong> ${containingWard}<br>` : '';
+    const flumAreaText = containingFLUM ? `<strong>FLUM:</strong> ${containingFLUM}<br>` : '';
+    //const flumAreaText = "test";
 
     const householdsPerSqMileValue = householdsPerSqMile[feature.properties.ZONING_LABEL] || 0;
     const numberOfHouseholds = Math.round(zoneAreaInSquareMi * householdsPerSqMileValue);
@@ -94,7 +98,7 @@ const ZoningGeoJSON = ({
 
     e.target.setStyle(geoJsonStyle(feature, 'ZONING_LABEL', zoningColors));
     e.target.setPopupContent(
-      `${generatePopupContent(feature)}${ancText}${planningAreaText}${wardAreaText}`
+      `${generatePopupContent(feature)}${ancText}${planningAreaText}${wardAreaText}${flumAreaText}`
     );
   };
 

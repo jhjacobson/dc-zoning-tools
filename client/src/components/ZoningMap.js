@@ -23,6 +23,8 @@ const ZoningMap = () => {
 
   const [showCompPlan, setShowCompPlan] = useState(true); // Add a new state for showing or hiding Comp Plan boundaries
   const [compPlanData, setCompPlanData] = useState(null); // Add a new state for Comp Plan GeoJSON data
+  const [flumData, setFlumData] = useState(null); // Add a new state for FLUM GeoJSON data
+
 
   const updateTotalChange = (change) => {
     setTotalChange((prevTotalChange) => prevTotalChange + change);
@@ -48,6 +50,7 @@ const ZoningMap = () => {
     );
     fetchDataAndUpdateState('/datasets/Wards_from_2022.geojson', setWardData);
     fetchDataAndUpdateState('/datasets/Comprehensive_Plan_Planning_Areas.geojson', setCompPlanData);
+    fetchDataAndUpdateState('/datasets/Comprehensive_Plan_in_2021.geojson', setFlumData); // Fetch FLUM data
   }, []);
 
   return (
@@ -118,6 +121,7 @@ const ZoningMap = () => {
             ancData={ancData}
             compPlanData={compPlanData}
             wardData={wardData}
+            flumData={flumData}
           />
         )}
       </MapContainer>

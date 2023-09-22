@@ -79,7 +79,13 @@ const ZoningGeoJSON = ({
     const containingFLUM = getNameForAreaOfPoint(clickedPoint, flumData, 'ALLCODES');
 
     if (newZoningLabel) {
+      // If the zone label is "UNZONED", return immediately and do nothing
+      if (feature.properties.ZONING_LABEL === "UNZONED") {
+        return;
+      }
+      else {
       updateZoningLabel(feature, newZoningLabel);
+      }
     }
 
     const ancText = containingANC ? `<strong>ANC:</strong> ${containingANC}<br>` : '';

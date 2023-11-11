@@ -25,7 +25,6 @@ const ZoningMap = () => {
   const [compPlanData, setCompPlanData] = useState(null); // Add a new state for Comp Plan GeoJSON data
   const [flumData, setFlumData] = useState(null); // Add a new state for FLUM GeoJSON data
 
-
   const updateTotalChange = (change) => {
     setTotalChange((prevTotalChange) => prevTotalChange + change);
   };
@@ -42,6 +41,12 @@ const ZoningMap = () => {
     setStateFunction(data);
   };
 
+  const handleMapCreated = (mapInstance) => {
+    console.log("MapContainer is created", mapInstance);
+    // Perform any other actions with the map instance here
+    setMap(mapInstance);  // Assuming you have a state setter for map
+  };
+
   useEffect(() => {
     fetchDataAndUpdateState('/datasets/simplified_zoning_map.geojson', setGeoJsonData);
     fetchDataAndUpdateState(
@@ -51,15 +56,17 @@ const ZoningMap = () => {
     fetchDataAndUpdateState('/datasets/Wards_from_2022.geojson', setWardData);
     fetchDataAndUpdateState('/datasets/Comprehensive_Plan_Planning_Areas.geojson', setCompPlanData);
     fetchDataAndUpdateState('/datasets/Comprehensive_Plan_in_2021.geojson', setFlumData); // Fetch FLUM data
+    console.log('End of useEffect in ZoningMap');
   }, []);
 
+  console.log('Passing map to ZoneAutocomplete from ZoningMap:', map);
   return (
     <div style={{ position: 'relative', height: '100vh' }}>
       <MapContainer
         center={[38.9, -77.02]}
         zoom={13}
         style={{ height: '100%' }}
-        whenCreated={setMap} // Add the whenCreated prop to set the map instance
+        whenCreated={handleMapCreated} // Add the whenCreated prop to set the map instance
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -110,7 +117,6 @@ const ZoningMap = () => {
         >
           Total Change in Households: {totalChange}
         </div>
-
         {showZoning && geoJsonData && (
           <ZoningGeoJSON
             geoJsonData={geoJsonData}

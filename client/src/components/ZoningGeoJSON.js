@@ -51,6 +51,7 @@ const ZoningGeoJSON = ({
     const changeInHouseholds = `<strong>Change in Households:</strong> ${diff}<br>`;
 
     return `
+        ${feature.properties.ZONING_LABEL === "UNZONED" ? unzonedMessage() : ''}
         <strong>Zoning Label:</strong> ${feature.properties.ZONING_LABEL}<br>
         <strong>Original Zoning Label:</strong> ${originalZoningLabel}<br>
         <strong>Area:</strong> ${zoneAreaInSquareMi} mi²<br>
@@ -79,12 +80,9 @@ const ZoningGeoJSON = ({
     const containingFLUM = getNameForAreaOfPoint(clickedPoint, flumData, 'ALLCODES');
 
     if (newZoningLabel) {
-      // If the zone label is "UNZONED", return immediately and do nothing
-      if (feature.properties.ZONING_LABEL === "UNZONED") {
-        return;
-      }
-      else {
-      updateZoningLabel(feature, newZoningLabel);
+      // If the zone label is "UNZONED", do not rezone
+      if (feature.properties.ZONING_LABEL !== "UNZONED") {
+        updateZoningLabel(feature, newZoningLabel);
       }
     }
 
@@ -94,8 +92,6 @@ const ZoningGeoJSON = ({
       : '';
     const wardAreaText = containingWard ? `<strong>Ward:</strong> ${containingWard}<br>` : '';
     const flumAreaText = containingFLUM ? `<strong>FLUM:</strong> ${containingFLUM}<br>` : '';
-    //const flumAreaText = "test";
-
     const householdsPerSqMileValue = householdsPerSqMile[feature.properties.ZONING_LABEL] || 0;
     const numberOfHouseholds = Math.round(zoneAreaInSquareMi * householdsPerSqMileValue);
     const diff = numberOfHouseholds - oldNumberOfHouseholds;
@@ -107,6 +103,10 @@ const ZoningGeoJSON = ({
       `${generatePopupContent(feature)}${ancText}${planningAreaText}${wardAreaText}${flumAreaText}`
     );
   };
+
+  const unzonedMessage = () => {
+    return `<span style="color: red; font-weight: bold;">Unable to change UNZONED areas</span><br>`;
+  }
 
   const onRevertClick = (e, feature, updateTotalChange) => {
     updateFeaturePopupAndStyle(

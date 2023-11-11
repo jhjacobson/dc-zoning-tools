@@ -1,4 +1,4 @@
-export const householdsPerSqMile = {
+export const householdsPerSqMile_detailed = {
   'ARTS-1': 20,
   'ARTS-2': 30,
   'ARTS-2 (IZ+)': 30,

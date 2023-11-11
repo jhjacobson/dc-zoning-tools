@@ -25,7 +25,6 @@ const ZoningMap = () => {
   const [compPlanData, setCompPlanData] = useState(null); // Add a new state for Comp Plan GeoJSON data
   const [flumData, setFlumData] = useState(null); // Add a new state for FLUM GeoJSON data
 
-
   const updateTotalChange = (change) => {
     setTotalChange((prevTotalChange) => prevTotalChange + change);
   };
@@ -40,6 +39,11 @@ const ZoningMap = () => {
     }
 
     setStateFunction(data);
+  };
+
+  const handleMapCreated = (mapInstance) => {
+    // Perform any other actions with the map instance here
+    setMap(mapInstance);  // Assuming you have a state setter for map
   };
 
   useEffect(() => {
@@ -58,8 +62,9 @@ const ZoningMap = () => {
       <MapContainer
         center={[38.9, -77.02]}
         zoom={13}
+        scrollWheelZoom={false}
         style={{ height: '100%' }}
-        whenCreated={setMap} // Add the whenCreated prop to set the map instance
+        whenCreated={handleMapCreated} // Add the whenCreated prop to set the map instance
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -110,7 +115,6 @@ const ZoningMap = () => {
         >
           Total Change in Households: {totalChange}
         </div>
-
         {showZoning && geoJsonData && (
           <ZoningGeoJSON
             geoJsonData={geoJsonData}

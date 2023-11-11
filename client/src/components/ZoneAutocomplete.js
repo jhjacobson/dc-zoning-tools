@@ -1,26 +1,25 @@
 import React, { useState } from 'react';
-import Select, { components } from 'react-select';
+import Select from 'react-select';
 
 const ZoneAutocomplete = ({ zoneLabels, onZoneChange, map }) => {
   const options = zoneLabels.map((label) => ({ value: label, label }));
   const [menuIsOpen, setMenuIsOpen] = useState(false);
 
+
   const handleChange = (selectedOption) => {
     onZoneChange(selectedOption?.value || '');
-    setMenuIsOpen(false);
   };
 
   const ClearIndicator = (props) => {
     const {
       children = '✖',
-      innerProps: { ref, ...restInnerProps },
+      getStyles,
+      innerProps: { ref, ...restInnerProps }
     } = props;
     return (
-      <components.ClearIndicator {...props}>
-        <div {...restInnerProps} ref={ref}>
-          {children}
-        </div>
-      </components.ClearIndicator>
+      <div {...restInnerProps} ref={ref} style={getStyles('clearIndicator', props)}>
+        {children}
+      </div>
     );
   };
 

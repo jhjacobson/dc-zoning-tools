@@ -42,7 +42,6 @@ const ZoningMap = () => {
   };
 
   const handleMapCreated = (mapInstance) => {
-    console.log("MapContainer is created", mapInstance);
     // Perform any other actions with the map instance here
     setMap(mapInstance);  // Assuming you have a state setter for map
   };
@@ -56,15 +55,14 @@ const ZoningMap = () => {
     fetchDataAndUpdateState('/datasets/Wards_from_2022.geojson', setWardData);
     fetchDataAndUpdateState('/datasets/Comprehensive_Plan_Planning_Areas.geojson', setCompPlanData);
     fetchDataAndUpdateState('/datasets/Comprehensive_Plan_in_2021.geojson', setFlumData); // Fetch FLUM data
-    console.log('End of useEffect in ZoningMap');
   }, []);
 
-  console.log('Passing map to ZoneAutocomplete from ZoningMap:', map);
   return (
     <div style={{ position: 'relative', height: '100vh' }}>
       <MapContainer
         center={[38.9, -77.02]}
         zoom={13}
+        scrollWheelZoom={false}
         style={{ height: '100%' }}
         whenCreated={handleMapCreated} // Add the whenCreated prop to set the map instance
       >

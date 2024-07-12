@@ -10,6 +10,10 @@ import { zoningColors } from '../constants/zoningColors';
 import BoundariesGeoJSON from './BoundariesGeoJSON'; // Import the new component
 import BoundariesToggle from './BoundariesToggle'; // Import the new component
 
+// hash generation stuff
+import pako from 'pako';
+import { Buffer } from 'buffer';
+
 const ZoningMap = () => {
   const [geoJsonData, setGeoJsonData] = useState(null);
   const [showZoning, setShowZoning] = useState(true);
@@ -25,10 +29,26 @@ const ZoningMap = () => {
   const [compPlanData, setCompPlanData] = useState(null); // Add a new state for Comp Plan GeoJSON data
   const [flumData, setFlumData] = useState(null); // Add a new state for FLUM GeoJSON data
 
-  const updateTotalChange = (change) => {
-    // @TODO: recalculate hash stuff here, it's called whenever
-    // a label is changed
 
+  const updateTotalChange = (change) => {
+    // recalculate URL hash whenever the total is changed
+    // the hash decodes to an array. the last val is the population change. the others are arrays of object ids
+    // each slot in the top-level array corresponds to a zoneLabels index
+    // so each sub-array of the hash is a list of object ids for features that should have their zone label
+    // changed to something other than the default
+    let allDefaults = true;
+    const nondefaultState = geoJsonData.features.reduce((prev, feature) => {
+      if (feature.properties.ZONING_LABEL !== feature.properties.originalZoningLabel) {
+        prev[zoneLabels.indexOf(feature.properties.ZONING_LABEL)].push(feature.properties.OBJECTID);
+        allDefaults = false;
+      }
+      return prev;
+    }, new Array(zoneLabels.length).fill().map(() => []));
+    nondefaultState.push(totalChange + change);
+    window.location.hash = allDefaults ? '' : Buffer.from(pako.gzip(JSON.stringify(nondefaultState))).toString('base64');
+
+    // this queues a state change but doesn't perform it synchronously, which is why we can't use the
+    // state directly in the hash calculation above
     setTotalChange((prevTotalChange) => prevTotalChange + change);
   };
 
@@ -36,14 +56,29 @@ const ZoningMap = () => {
     const data = await fetchGeoJsonData(datasetPath);
 
     if (datasetPath === '/datasets/simplified_zoning_map.geojson') {
+      // override zoning labels if a hash is present
+      // this only works when the map is loaded, not when the hash is updated
+      // doing the latter would require a lot more react surgery and doesn't seem that useful anyway
+      let nondefaults = {};
+      if (window.location.hash) {
+        const decodedHash = JSON.parse(pako.ungzip(Buffer.from(window.location.hash.slice(1), 'base64'), { to: 'string' }));
+        const popChange = parseInt(decodedHash.pop());
+        setTotalChange(popChange);
+        nondefaults = decodedHash.reduce((prev, zoneLabelArray, zoneLabelIndex) => {
+          zoneLabelArray.forEach((objectId) => {
+            prev[objectId] = zoneLabels[zoneLabelIndex];
+          });
+          return prev;
+        }, {});
+      }
+
       data.features.forEach((feature) => {
         feature.properties.originalZoningLabel = feature.properties.ZONING_LABEL;
+        if (nondefaults[feature.properties.OBJECTID]) {
+          feature.properties.ZONING_LABEL = nondefaults[feature.properties.OBJECTID];
+        }
       });
     }
-
-    // @TODO: special-case simplified_zoning_map.geojson to check
-    // the state of the URL hash and override features' ZONING_LABELs
-    // accordingly
 
     setStateFunction(data);
   };

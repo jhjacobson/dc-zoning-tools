@@ -84,8 +84,6 @@ const ZoningMap = () => {
   };
 
   useEffect(() => {
-    // @TODO: set up hooks for hash-management functions
-
     fetchDataAndUpdateState('/datasets/simplified_zoning_map.geojson', setGeoJsonData);
     fetchDataAndUpdateState(
       '/datasets/Advisory_Neighborhood_Commissions_from_2023.geojson',

@@ -26,6 +26,9 @@ const ZoningMap = () => {
   const [flumData, setFlumData] = useState(null); // Add a new state for FLUM GeoJSON data
 
   const updateTotalChange = (change) => {
+    // @TODO: recalculate hash stuff here, it's called whenever
+    // a label is changed
+
     setTotalChange((prevTotalChange) => prevTotalChange + change);
   };
 
@@ -38,10 +41,16 @@ const ZoningMap = () => {
       });
     }
 
+    // @TODO: special-case simplified_zoning_map.geojson to check
+    // the state of the URL hash and override features' ZONING_LABELs
+    // accordingly
+
     setStateFunction(data);
   };
 
   useEffect(() => {
+    // @TODO: set up hooks for hash-management functions
+
     fetchDataAndUpdateState('/datasets/simplified_zoning_map.geojson', setGeoJsonData);
     fetchDataAndUpdateState(
       '/datasets/Advisory_Neighborhood_Commissions_from_2023.geojson',

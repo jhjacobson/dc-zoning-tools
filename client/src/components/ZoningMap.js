@@ -29,28 +29,31 @@ const ZoningMap = () => {
   const [compPlanData, setCompPlanData] = useState(null); // Add a new state for Comp Plan GeoJSON data
   const [flumData, setFlumData] = useState(null); // Add a new state for FLUM GeoJSON data
 
-
   const updateTotalChange = (change) => {
-    // recalculate URL hash whenever the total is changed
-    // the hash decodes to an array. the last val is the population change. the others are arrays of object ids
-    // each slot in the top-level array corresponds to a zoneLabels index
-    // so each sub-array of the hash is a list of object ids for features that should have their zone label
-    // changed to something other than the default
-    let allDefaults = true;
-    const nondefaultState = geoJsonData.features.reduce((prev, feature) => {
-      if (feature.properties.ZONING_LABEL !== feature.properties.originalZoningLabel) {
-        prev[zoneLabels.indexOf(feature.properties.ZONING_LABEL)].push(feature.properties.OBJECTID);
-        allDefaults = false;
-      }
-      return prev;
-    }, new Array(zoneLabels.length).fill().map(() => []));
-    nondefaultState.push(totalChange + change);
-    window.location.hash = allDefaults ? '' : Buffer.from(pako.gzip(JSON.stringify(nondefaultState))).toString('base64');
-
-    // this queues a state change but doesn't perform it synchronously, which is why we can't use the
-    // state directly in the hash calculation above
-    setTotalChange((prevTotalChange) => prevTotalChange + change);
+  // recalculate URL hash whenever the total is changed
+  // the hash decodes to an array. the last val is the population change. the others are arrays of object ids
+  // each slot in the top-level array corresponds to a zoneLabels index
+  // so each sub-array of the hash is a list of object ids for features that should have their zone label
+  // changed to something other than the default
+    setTotalChange((prevTotalChange) => {
+      const newTotalChange = prevTotalChange + change;
+      
+      let allDefaults = true;
+      const nondefaultState = geoJsonData.features.reduce((prev, feature) => {
+        if (feature.properties.ZONING_LABEL !== feature.properties.originalZoningLabel) {
+          prev[zoneLabels.indexOf(feature.properties.ZONING_LABEL)].push(feature.properties.OBJECTID);
+          allDefaults = false;
+        }
+        return prev;
+      }, new Array(zoneLabels.length).fill().map(() => []));
+      
+      nondefaultState.push(newTotalChange);
+      window.location.hash = allDefaults ? '' : Buffer.from(pako.gzip(JSON.stringify(nondefaultState))).toString('base64');
+      
+      return newTotalChange;
+    });
   };
+    
 
   const fetchDataAndUpdateState = async (datasetPath, setStateFunction) => {
     const data = await fetchGeoJsonData(datasetPath);
